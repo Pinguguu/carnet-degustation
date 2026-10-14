@@ -43,9 +43,10 @@ var SECTIONS=[
   {n:4,t:'Conclusions',keys:['bal','lon','int','cpx','qual','jqual','mat','com']}
 ];
 var PROFILE=[['inez','Intensité nez'],['suc','Sucrosité'],['aci','Acidité'],['tan','Tanin'],['alc','Alcool'],['corps','Corps'],['iboc','Intensité bouche'],['fin','Finale']];
-var DETAIL=[['Le vin',['cep','eff','prix','abv','deg']],['Apparence',['limp','icol','col','aobs']],['Nez',['cond','inez','dev','anez']],
+var DETAIL=[['Le vin',['cep','eff','prix','abv','deg','aveugle']],['Apparence',['limp','icol','col','aobs']],['Nez',['cond','inez','dev','anez']],
   ['Bouche',['suc','aci','tan','ttan','alc','corps','mousse','iboc','fin','aboc','bobs']],['Conclusions',['bal','lon','int','cpx','qual','jqual','mat','com']]];
 var JCOLS=['date','nom','prod','app','cep','mil','type','eff','limp','icol','col','aobs','cond','inez','anez','dev','suc','aci','tan','ttan','alc','corps','mousse','iboc','aboc','fin','bobs','bal','lon','int','cpx','qual','jqual','mat','abv','prix','deg','com'];
+F.aveugle={l:'Dégustation à l\'aveugle',kind:'flag'};
 var FIELDKEYS=Object.keys(F);
 
 var LEX=[
@@ -120,9 +121,10 @@ var SECTIONS=[
   {n:4,t:'Conclusions',keys:['bal','lon','cpx','exp','qual','jqual','com']}
 ];
 var PROFILE=[['inez','Intensité nez'],['suc','Sucrosité'],['iboc','Intensité bouche'],['fin','Finale']];
-var DETAIL=[['Le spiritueux',['cep','mil','prix','abv']],['Apparence',['limp','icol','col','aobs']],['Nez',['cond','inez','anez']],
+var DETAIL=[['Le spiritueux',['cep','mil','prix','abv','aveugle']],['Apparence',['limp','icol','col','aobs']],['Nez',['cond','inez','anez']],
   ['Bouche',['suc','tex','iboc','aboc','fin','fnat']],['Conclusions',['bal','lon','cpx','exp','qual','jqual','com']]];
 var JCOLS=['date','nom','prod','app','cep','mil','type','abv','prix','limp','icol','col','aobs','cond','inez','anez','suc','tex','iboc','aboc','fin','fnat','bal','lon','cpx','exp','qual','jqual','com'];
+F.aveugle={l:'Dégustation à l\'aveugle',kind:'flag'};
 var FIELDKEYS=Object.keys(F);
 
 var LEX=[
@@ -229,7 +231,7 @@ function buildField(k){
     var bw=h('div',{class:'field'}),bb=h('button',{class:'btn',id:'bblind',type:'button','aria-pressed':'false',
       title:'Quand il est activé, tu peux enregistrer la fiche sans nom ; tu le renseigneras plus tard dans le journal',
       onclick:function(){blindOn=!blindOn;paintBlind();}},'À l\'aveugle : désactivé');
-    bw.append(h('span',{class:'lab'},'Dégustation'),bb);return bw;
+    bw.append(h('span',{class:'lab'},'Dégustation'),bb,h('p',{class:'hint',id:'blindhint',hidden:true},'Cette fiche restera marquée « à l\'aveugle » dans le journal, même une fois nommée. Désactive le bouton pour retirer la mention.'));return bw;
   }
   var f=F[k],w=h('div',{class:'field'+(f.wide?' wide':'')}),c;
   if(f.kind==='text'||f.kind==='date'){
@@ -359,7 +361,6 @@ function renderSummary(){
 function isEmpty(){return FIELDKEYS.every(function(k){return !entry[k]||((k==='date'&&entry[k]===today())||k==='deg');});}
 function updateBar(){
   $('#bsave').textContent=editId?WD.maj:'Enregistrer dans le journal';
-  if(editId)blindOn=false;
   paintBlind();
   var eb=$('#editbar');eb.hidden=!editId;
   if(editId)$('#edittxt').textContent='Modification de « '+(entry.nom||WD.ce)+' ». Les changements remplacent la ligne du journal.';
@@ -372,12 +373,13 @@ window.addEventListener('pagehide',function(){if(draftTimer){clearTimeout(draftT
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'&&draftTimer){clearTimeout(draftTimer);draftTimer=null;writeDraft();}});
 function restoreDraft(){
   var k=draftKey(),raw=k?lsGet(k):null;if(!raw)return;
-  try{var d=JSON.parse(raw);if(d&&d.entry&&typeof d.entry==='object'){entry=Object.assign(blank(false),d.entry);editId=d.editId||null;editMeta=d.editMeta||null;}}catch(e){}
+  try{var d=JSON.parse(raw);if(d&&d.entry&&typeof d.entry==='object'){entry=Object.assign(blank(false),d.entry);editId=d.editId||null;editMeta=d.editMeta||null;blindOn=!!(editId&&entry.aveugle);}}catch(e){}
 }
 var blindOn=false;
 function paintBlind(){
   var b=$('#bblind');if(!b)return;
-  b.parentNode.hidden=!!editId;b.classList.toggle('on',blindOn);b.setAttribute('aria-pressed',blindOn?'true':'false');
+  b.parentNode.hidden=!!editId&&!entry.aveugle&&!blindOn;var bh=$('#blindhint');if(bh)bh.hidden=!(editId&&blindOn);
+  b.classList.toggle('on',blindOn);b.setAttribute('aria-pressed',blindOn?'true':'false');
   b.textContent=blindOn?'À l\'aveugle : activé':'À l\'aveugle : désactivé';
   $('#bsave').textContent=editId?WD.maj:(blindOn?'Enregistrer sans nom':'Enregistrer dans le journal');
 }
@@ -529,7 +531,8 @@ async function deleteAccount(ev){
 /* ---------- enregistrer / vider ---------- */
 var clearArmed=false,clearTimer=null;
 async function saveEntry(){
-  var blind=blindOn&&!editId;
+  var blind=blindOn;
+  if(blindOn)entry.aveugle='Oui';else delete entry.aveugle;
   if(!blind&&!String(entry.nom||'').trim()){
     $('#nom-err').hidden=false;
     var i=els.nom.input;i.focus();i.scrollIntoView({block:'center',behavior:'smooth'});return;
@@ -561,7 +564,7 @@ function disarm(){clearArmed=false;clearTimeout(clearTimer);var b=$('#bclear');b
 function tabCount(){$('#jcount').textContent=ready&&entries.length?String(entries.length):'';}
 function matchEntry(e,q){
   if(!q)return true;
-  var hay=norm(['nom','prod','app','cep','mil','type','col','anez','aboc','com'].map(function(k){return e[k]||'';}).join(' '));
+  var hay=norm(['nom','prod','app','cep','mil','type','col','anez','aboc','com'].map(function(k){return e[k]||'';}).join(' ')+(e.aveugle?' aveugle':''));
   return norm(q).split(/\s+/).every(function(t){return hay.indexOf(t)>=0;});
 }
 function renderJournal(){
@@ -600,7 +603,7 @@ function entryEl(e){
     h('span',{class:'dot',style:e.col?'background:'+HEX[e.col]:(e.type?'background:'+TYPEHEX[e.type]:null)}),
     h('div',{style:'min-width:0'},h('div',{class:'e-name'},e.nom||'À l\'aveugle'),
       h('div',{class:'e-meta'},[fmtDate(e.date),e.prod,e.app,e.cep,e.mil].filter(Boolean).join(' · '))),
-    h('div',{class:'e-side'},e.type?h('span',{class:'pill'},e.type):null,e.qual?h('span',{class:'pill q'},e.qual):null));
+    h('div',{class:'e-side'},(e.aveugle&&e.nom)?h('span',{class:'pill bl',title:'Dégusté à l\'aveugle'},'À l\'aveugle'):null,e.type?h('span',{class:'pill'},e.type):null,e.qual?h('span',{class:'pill q'},e.qual):null));
   if(open)fillDetail(det,e);
   return h('article',{class:'entry'},head,det);
 }
@@ -623,7 +626,7 @@ function fillDetail(det,e){
 }
 function startEdit(e){
   var n=blank(false);FIELDKEYS.forEach(function(k){if(e[k])n[k]=e[k];});
-  entry=n;editId=e.id;editMeta={createdAt:e.createdAt};syncAll();queueDraft();show('fiche');window.scrollTo(0,0);
+  entry=n;editId=e.id;editMeta={createdAt:e.createdAt};blindOn=!!e.aveugle;syncAll();queueDraft();show('fiche');window.scrollTo(0,0);
 }
 function slug(t){return norm(t).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||WD.slug;}
 function sheetModel(e){

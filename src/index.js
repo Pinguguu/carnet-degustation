@@ -12,7 +12,7 @@ const ID_RE = /^[A-Za-z0-9_-]{1,60}$/;
 const USER_RE = /^[a-z0-9][a-z0-9_.-]{2,23}$/;
 
 // Champs d'une fiche de dégustation (identiques à ceux du site).
-const FIELD_KEYS = ['kind', 'tex', 'fnat', 'exp', 'date', 'deg', 'nom', 'prod', 'app', 'cep', 'mil', 'prix', 'abv', 'type', 'eff', 'limp', 'icol', 'col',
+const FIELD_KEYS = ['kind', 'aveugle', 'tex', 'fnat', 'exp', 'date', 'deg', 'nom', 'prod', 'app', 'cep', 'mil', 'prix', 'abv', 'type', 'eff', 'limp', 'icol', 'col',
   'aobs', 'cond', 'inez', 'anez', 'dev', 'suc', 'aci', 'tan', 'ttan', 'alc', 'corps', 'mousse', 'iboc', 'aboc', 'fin',
   'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com'];
 const LONG_KEYS = new Set(['tex', 'aobs', 'anez', 'aboc', 'bobs', 'jqual', 'com']);
@@ -275,6 +275,7 @@ function cleanEntry(body, env, user) {
     if (!v) continue;
     out[k] = v.slice(0, LONG_KEYS.has(k) ? 4000 : 300);
   }
+  if (out.aveugle !== 'Oui') delete out.aveugle;
   if (out.kind !== 'spi') delete out.kind;
   else if (!spiritsAllowed(env, user.username)) throw new HttpError(403, 'Les spiritueux ne sont pas encore ouverts pour ce compte.');
   if (!Object.keys(out).length) throw new HttpError(400, 'La fiche est vide.');

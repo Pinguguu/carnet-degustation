@@ -211,3 +211,7 @@ label.btn{display:inline-flex;align-items:center}
 :root[data-mode="spi"]{--accent:#8A4A12;--accent-soft:#F4E3CF}
 @media (prefers-color-scheme:dark){:root[data-mode="spi"]:not([data-theme="light"]){--accent:#E0A060;--accent-soft:#3A2615;--accent-ink:#1D1209}}
 :root[data-theme="dark"][data-mode="spi"]{--accent:#E0A060;--accent-soft:#3A2615;--accent-ink:#1D1209}
+
+/* mention « à l'aveugle » conservée */
+.pill.bl{border-color:var(--accent);color:var(--accent);font-weight:600}
+.pill.bl::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:6px}
