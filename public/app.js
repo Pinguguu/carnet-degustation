@@ -34,7 +34,7 @@ var F={
   mat:{l:'Niveau de maturité',kind:'seg',s:'mat',wide:1}, com:{l:'Commentaire libre',kind:'area',wide:1}
 };
 var SECTIONS=[
-  {t:'Le vin',keys:['date','deg','nom','prod','app','cep','mil','prix','abv','type','eff']},
+  {t:'Le vin',keys:['date','blind','nom','prod','app','cep','mil','prix','abv','type','eff']},
   {n:1,t:'Apparence',keys:['limp','icol','col','aobs']},
   {n:2,t:'Nez',keys:['cond','inez','dev','anez']},
   {n:3,t:'Bouche',keys:['suc','aci','tan','ttan','alc','corps','mousse','iboc','fin','aboc','bobs']},
@@ -109,6 +109,12 @@ entry=blank(false);
 /* ---------- fiche : construction ---------- */
 function labelFor(k){return h('label',{class:'lab',id:'l-'+k,for:'f-'+k},F[k].l);}
 function buildField(k){
+  if(k==='blind'){
+    var bw=h('div',{class:'field'}),bb=h('button',{class:'btn',id:'bblind',type:'button','aria-pressed':'false',
+      title:'Quand il est activé, tu peux enregistrer la fiche sans nom ; tu le renseigneras plus tard dans le journal',
+      onclick:function(){blindOn=!blindOn;paintBlind();}},'À l\'aveugle : désactivé');
+    bw.append(h('span',{class:'lab'},'Dégustation'),bb);return bw;
+  }
   var f=F[k],w=h('div',{class:'field'+(f.wide?' wide':'')}),c;
   if(f.kind==='text'||f.kind==='date'){
     c=h('input',{class:'inp',id:'f-'+k,type:f.kind==='date'?'date':'text',placeholder:f.ph||null,inputmode:f.mode||null,autocomplete:'off',
@@ -254,7 +260,7 @@ function restoreDraft(){
 var blindOn=false;
 function paintBlind(){
   var b=$('#bblind');if(!b)return;
-  b.hidden=!!editId;b.classList.toggle('on',blindOn);b.setAttribute('aria-pressed',blindOn?'true':'false');
+  b.parentNode.hidden=!!editId;b.classList.toggle('on',blindOn);b.setAttribute('aria-pressed',blindOn?'true':'false');
   b.textContent=blindOn?'À l\'aveugle : activé':'À l\'aveugle : désactivé';
   $('#bsave').textContent=editId?'Mettre à jour le vin':(blindOn?'Enregistrer sans nom':'Enregistrer dans le journal');
 }
@@ -757,7 +763,6 @@ function segFilter(box,opts,get,set){
 buildForm();buildProfile();syncAll();renderLexique();
 document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){show(t.dataset.tab);});});
 $('#bsave').addEventListener('click',saveEntry);
-$('#bblind').addEventListener('click',function(){blindOn=!blindOn;paintBlind();});
 $('#bclear').addEventListener('click',clearForm);
 $('#jdl').addEventListener('click',downloadXlsx);
 $('#xlfile').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];e.target.value='';if(f)importXlsx(f);});
