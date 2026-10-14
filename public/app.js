@@ -9,7 +9,7 @@ var SCALE={
   type:['Blanc','Rosé','Rouge'], eff:['Tranquille','Pétillant','Mousseux'], limp:['Limpide','Trouble'], icol:['Pâle','Moyenne','Intense'],
   cond:['Net','Défaut apparent'], inez:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
   dev:['Jeune','En développement','Pleinement développé','Fatigué'], suc:['Sec','Demi-sec','Moelleux','Liquoreux'],
-  n5:['Faible','Moyenne -','Moyenne','Moyenne +','Élevée'], alc:['Faible','Moyen','Élevé'], corps:['Léger','Moyen -','Moyen','Moyen +','Plein'],
+  n5:['Faible','Moyenne -','Moyenne','Moyenne +','Élevée'], alc:['Faible','Moyen','Fort'], corps:['Léger','Moyen -','Moyen','Moyen +','Plein'],
   iboc:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'], fin:['Courte','Moyenne -','Moyenne','Moyenne +','Longue'], yn:['Oui','Non'],
   qual:['Mauvaise','Passable','Bonne','Très bonne','Exceptionnelle'],
   mat:['Trop jeune','À boire maintenant (potentiel de garde)','À boire maintenant (pas de potentiel)','Trop vieux / en déclin']
@@ -407,8 +407,8 @@ function sessionLost(){
   toast('Ta session a expiré : reconnecte-toi.');
   setTimeout(function(){location.reload();},1200);
 }
-/* anciennes fiches : « Profonde » est devenu « Intense » (affichage ; réécrit à la prochaine sauvegarde) */
-function legacyFix(e){if(e&&e.icol==='Profonde')e.icol='Intense';return e;}
+/* anciennes fiches : « Profonde » est devenu « Intense », alcool « Élevé » est devenu « Fort » (affichage ; réécrit à la prochaine sauvegarde) */
+function legacyFix(e){if(e&&e.icol==='Profonde')e.icol='Intense';if(e&&e.alc==='Élevé')e.alc='Fort';return e;}
 function kindOf(e){return e&&e.kind==='spi'?'spi':'vin';}
 function refilter(){entries=allEntries.filter(function(e){return kindOf(e)===mode;});}
 function upsertLocal(list){
