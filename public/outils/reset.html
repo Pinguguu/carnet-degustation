@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Réinitialiser un mot de passe</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="tool">
+  <h1>Réinitialiser un mot de passe</h1>
+  <p class="lede">Outil pour la personne qui gère le site. Il fabrique une requête SQL à exécuter dans la console de la base D1. Le mot de passe ne quitte pas ce navigateur : seule son empreinte apparaît dans la requête.</p>
+  <form class="sec" id="f" novalidate>
+    <div class="fields">
+      <div class="field"><label class="lab" for="u">Identifiant de la personne</label>
+        <input class="inp" id="u" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+      <div class="field"><label class="lab" for="p">Nouveau mot de passe (8 caractères minimum)</label>
+        <input class="inp" id="p" type="text" autocomplete="off" spellcheck="false"></div>
+    </div>
+    <p class="err" id="err" role="alert" hidden></p>
+    <div><button class="btn pri" type="submit">Générer la requête</button></div>
+  </form>
+  <section class="sec" id="out" hidden>
+    <h2>Requête à exécuter</h2>
+    <textarea class="ta" id="sql" readonly aria-label="Requête SQL"></textarea>
+    <div class="acts"><button class="btn sm" id="copy" type="button">Copier la requête</button></div>
+    <ol>
+      <li>Cloudflare, puis <strong>Storage &amp; databases</strong>, <strong>D1</strong>, <strong>carnet-degustation</strong>, onglet <strong>Console</strong>.</li>
+      <li>Colle la requête et exécute-la.</li>
+      <li>Donne le nouveau mot de passe à la personne : elle pourra le changer dans l’onglet <strong>Compte</strong>.</li>
+    </ol>
+  </section>
+</main>
+<script src="/outils/reset.js"></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Carnet de dégustation</title>
+<meta name="description" content="Fiche de dégustation WSET (approche systématique), journal privé, cépages et lexique d'arômes.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="authwrap" id="authwrap" hidden>
+  <div class="auth-brand">
+    <h1>Carnet de dégustation</h1>
+    <p class="sub">Approche systématique · apparence, nez, bouche, conclusions</p>
+  </div>
+  <div class="auth-card">
+    <div class="seg" role="radiogroup" aria-label="Choisir une action">
+      <button type="button" role="radio" class="opt on" id="au-m-login" aria-checked="true">Se connecter</button>
+      <button type="button" role="radio" class="opt" id="au-m-register" aria-checked="false">Créer un compte</button>
+    </div>
+    <form id="auform" novalidate>
+      <div class="field"><label class="lab" for="au-user">Identifiant</label>
+        <input class="inp" id="au-user" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+      <div class="field"><label class="lab" for="au-pass">Mot de passe</label>
+        <input class="inp" id="au-pass" name="password" type="password" autocomplete="current-password"></div>
+      <div class="field" id="au-invite-f" hidden><label class="lab" for="au-invite">Code d’invitation</label>
+        <input class="inp" id="au-invite" name="invite" autocomplete="off" autocapitalize="none" spellcheck="false">
+        <p class="hint">Le code que t’a donné la personne qui t’invite.</p></div>
+      <p class="err" id="au-err" role="alert" hidden></p>
+      <button class="btn pri" id="au-submit" type="submit">Se connecter</button>
+      <p class="auth-note" id="au-note"></p>
+    </form>
+  </div>
+</div>
+
+<div id="app" hidden>
+<header class="top"><div class="wrap">
+  <h1>Carnet de dégustation</h1>
+  <p class="sub">Approche systématique · apparence, nez, bouche, conclusions</p>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="t-fiche" data-tab="fiche" aria-controls="v-fiche" aria-selected="true">Fiche</button>
+    <button class="tab" role="tab" id="t-journal" data-tab="journal" aria-controls="v-journal" aria-selected="false">Journal<span class="n" id="jcount"></span></button>
+    <button class="tab" role="tab" id="t-cepages" data-tab="cepages" aria-controls="v-cepages" aria-selected="false">Cépages</button>
+    <button class="tab" role="tab" id="t-lexique" data-tab="lexique" aria-controls="v-lexique" aria-selected="false">Lexique</button>
+    <button class="tab" role="tab" id="t-compte" data-tab="compte" aria-controls="v-compte" aria-selected="false">Compte</button>
+  </nav>
+</div></header>
+
+<main class="wrap">
+  <section class="view" id="v-fiche" role="tabpanel" aria-labelledby="t-fiche">
+    <div class="fiche">
+      <div class="stack" id="fstack"></div>
+      <aside class="profile" aria-label="Profil du vin" id="profile"></aside>
+    </div>
+  </section>
+
+  <section class="view" id="v-journal" role="tabpanel" aria-labelledby="t-journal" hidden>
+    <p class="lede">Chaque vin enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.</p>
+    <div class="tools">
+      <input class="inp" id="jq" type="search" placeholder="Chercher un vin, un cépage, une région…" aria-label="Chercher dans le journal">
+      <div class="seg" id="jtype" role="radiogroup" aria-label="Filtrer par type"></div>
+      <span class="count" id="jn"></span>
+      <button class="btn sm pri" id="jdl" type="button">Télécharger en Excel</button>
+      <label class="btn sm" for="xlfile">Importer un Excel</label>
+      <input type="file" id="xlfile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    </div>
+    <p class="store" id="jstore"></p>
+    <div class="jlist" id="jlist"></div>
+  </section>
+
+  <section class="view" id="v-cepages" role="tabpanel" aria-labelledby="t-cepages" hidden>
+    <p class="lede">Les cépages à connaître : où ils poussent, ce qu'ils donnent au nez et en bouche, et leur structure sur l'échelle à cinq niveaux de la fiche.</p>
+    <div class="filters">
+      <input class="inp" id="cq" type="search" placeholder="Chercher un cépage, une région, un arôme…" aria-label="Chercher un cépage">
+      <div class="seg" id="ccol" role="radiogroup" aria-label="Filtrer par couleur"></div>
+      <span class="count cright" id="cn"></span>
+    </div>
+    <div class="grid" id="cgrid"></div>
+  </section>
+
+  <section class="view" id="v-lexique" role="tabpanel" aria-labelledby="t-lexique" hidden>
+    <p class="lede">Aide-mémoire des arômes par famille, puis les échelles de la fiche dans leur ordre. Dans la fiche, le lexique se déplie sous les champs d'arômes : un clic ajoute ou retire un terme.</p>
+    <div class="cols3" id="lex"></div>
+    <div class="scales" id="scales"></div>
+  </section>
+
+  <section class="view" id="v-compte" role="tabpanel" aria-labelledby="t-compte" hidden>
+    <div class="stack acct">
+      <div class="sec">
+        <div class="sec-h"><span class="step">Connecté en tant que</span><h2 id="acname"></h2></div>
+        <p class="hint">Ton journal est privé : les autres utilisateurs du site ne peuvent pas le voir. La personne qui héberge le site a, comme pour tout site, accès à la base de données.</p>
+        <div class="acts"><button class="btn" id="logout" type="button">Se déconnecter</button></div>
+      </div>
+      <form class="sec" id="pwform" novalidate>
+        <div class="sec-h"><span class="step">Sécurité</span><h2>Changer de mot de passe</h2></div>
+        <div class="field"><label class="lab" for="pw-cur">Mot de passe actuel</label>
+          <input class="inp" id="pw-cur" type="password" autocomplete="current-password"></div>
+        <div class="field"><label class="lab" for="pw-new">Nouveau mot de passe (8 caractères minimum)</label>
+          <input class="inp" id="pw-new" type="password" autocomplete="new-password"></div>
+        <div class="field"><label class="lab" for="pw-new2">Répéter le nouveau mot de passe</label>
+          <input class="inp" id="pw-new2" type="password" autocomplete="new-password"></div>
+        <p class="err" id="pw-err" role="alert" hidden></p>
+        <div><button class="btn pri" type="submit">Changer le mot de passe</button></div>
+      </form>
+      <form class="sec" id="delform" novalidate>
+        <div class="sec-h"><span class="step">Zone sensible</span><h2>Supprimer mon compte</h2></div>
+        <p class="hint">Efface définitivement ton compte et tout ton journal. Pense à télécharger ton journal en Excel avant (onglet Journal).</p>
+        <div class="field"><label class="lab" for="del-pw">Mot de passe</label>
+          <input class="inp" id="del-pw" type="password" autocomplete="current-password"></div>
+        <p class="err" id="del-err" role="alert" hidden></p>
+        <div><button class="btn" id="del-btn" type="submit">Supprimer mon compte</button></div>
+      </form>
+    </div>
+  </section>
+
+  <p class="foot">Contenus de référence rédigés à partir de connaissances générales sur la dégustation, avec la terminologie de l'approche systématique du WSET. Aide-mémoire personnel, à compléter avec le support de cours officiel.</p>
+</main>
+
+<div class="bar" id="bar"><div class="wrap">
+  <span class="note" id="barnote"></span>
+  <button class="btn" id="bclear" type="button">Vider la fiche</button>
+  <button class="btn pri" id="bsave" type="button">Enregistrer dans le journal</button>
+</div></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="/cepages.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "carnet-degustation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Carnet de dégustation (approche systématique WSET) avec comptes, sur Cloudflare Workers + D1",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
