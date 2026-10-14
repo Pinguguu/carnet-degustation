@@ -16,7 +16,7 @@
       "database_name": "carnet-degustation",
       // À REMPLACER par l'identifiant de ta base D1 (voir README.md, étape 2).
       // En développement local, cette valeur d'exemple suffit.
-      "database_id": "COLLE-ICI-L-IDENTIFIANT-DE-LA-BASE-D1"
+      "database_id": "7fbc126f-a4d7-4559-be41-62c05586ac79"
     }
   ],
   "observability": { "enabled": true }
