@@ -10,7 +10,7 @@ var SCALE={
   cond:['Net','Défaut apparent'], inez:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
   dev:['Jeune','En développement','Pleinement développé','Fatigué'], suc:['Sec','Demi-sec','Moelleux','Liquoreux'],
   n5:['Faible','Moyenne -','Moyenne','Moyenne +','Élevée'], alc:['Faible','Moyen','Élevé'], corps:['Léger','Moyen -','Moyen','Moyen +','Plein'],
-  iboc:['Légère','Moyenne','Prononcée'], fin:['Courte','Moyenne -','Moyenne','Moyenne +','Longue'], yn:['Oui','Non'],
+  iboc:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'], fin:['Courte','Moyenne -','Moyenne','Moyenne +','Longue'], yn:['Oui','Non'],
   qual:['Mauvaise','Passable','Bonne','Très bonne','Exceptionnelle'],
   mat:['Trop jeune','À boire maintenant (potentiel de garde)','À boire maintenant (pas de potentiel)','Trop vieux / en déclin']
 };
@@ -87,7 +87,7 @@ return {SCALE:SCALE,COLORS:COLORS,HEX:HEX,TYPEHEX:TYPEHEX,F:F,SECTIONS:SECTIONS,
 CFG.spi=(function(){
 var SCALE={
   type:['Whisky','Rhum','Brandy','Gin','Vodka','Agave','Liqueur','Autre'], limp:['Limpide','Trouble'], icol:['Incolore','Pâle','Moyenne','Profonde','Opaque'],
-  cond:['Net','Défaut apparent'], i6:['Neutre','Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
+  cond:['Net','Défaut apparent'], i6:['Neutre','Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'], i5:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
   suc:['Sec','Demi-sec','Moyen','Doux'], fin:['Courte','Moyenne -','Moyenne','Moyenne +','Longue'],
   fnat:['Neutre','Simple','Certaine complexité','Très complexe'], yn:['Oui','Non'],
   qual:['Défectueux','Faible','Acceptable','Bon','Très bon','Exceptionnel']
@@ -105,7 +105,7 @@ var F={
   aobs:{l:'Autres observations',kind:'area',ph:'trouble au louching, particules, jambes…',wide:1},
   cond:{l:'Condition',kind:'seg',s:'cond'}, inez:{l:'Intensité aromatique',kind:'seg',s:'i6',wide:1},
   anez:{l:'Caractéristiques aromatiques',kind:'aroma',ph:'malt, vanille, fumée, agrumes…',wide:1},
-  suc:{l:'Sucrosité',kind:'seg',s:'suc'}, iboc:{l:'Intensité aromatique',kind:'seg',s:'i6',wide:1},
+  suc:{l:'Sucrosité',kind:'seg',s:'suc'}, iboc:{l:'Intensité aromatique',kind:'seg',s:'i5',wide:1},
   tex:{l:'Texture et autres sensations',kind:'area',ph:'rond, huileux, chaleureux, rugueux, amertume, astringence…',wide:1},
   aboc:{l:'Caractéristiques aromatiques',kind:'aroma',ph:'caramel, poivre, fruits secs…',wide:1},
   fin:{l:'Longueur de la finale',kind:'seg',s:'fin'}, fnat:{l:'Nature de la finale',kind:'seg',s:'fnat'},
