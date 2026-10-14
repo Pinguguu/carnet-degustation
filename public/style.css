@@ -201,3 +201,6 @@ label.btn{display:inline-flex;align-items:center}
 
 .acct .sec{display:grid;gap:14px}
 .acct .sec-h{margin-bottom:0}
+
+#bblind.on{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:600;box-shadow:0 0 0 2px var(--accent)}
+#bblind.on::before{content:'● ';color:var(--accent)}

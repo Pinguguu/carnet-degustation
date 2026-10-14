@@ -266,7 +266,7 @@ function cleanEntry(body) {
     if (!v) continue;
     out[k] = v.slice(0, LONG_KEYS.has(k) ? 4000 : 300);
   }
-  if (!out.nom) throw new HttpError(400, 'Le nom du vin est obligatoire.');
+  if (!Object.keys(out).length) throw new HttpError(400, 'La fiche est vide.');
   if (out.date && !/^\d{4}-\d{2}-\d{2}$/.test(out.date)) delete out.date;
   return out;
 }

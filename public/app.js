@@ -236,7 +236,8 @@ function renderSummary(){
 function isEmpty(){return FIELDKEYS.every(function(k){return !entry[k]||((k==='date'&&entry[k]===today())||k==='deg');});}
 function updateBar(){
   $('#bsave').textContent=editId?'Mettre à jour le vin':'Enregistrer dans le journal';
-  $('#bblind').hidden=!!editId;
+  if(editId)blindOn=false;
+  paintBlind();
   var eb=$('#editbar');eb.hidden=!editId;
   if(editId)$('#edittxt').textContent='Modification de « '+(entry.nom||'ce vin')+' ». Les changements remplacent la ligne du journal.';
   $('#barnote').textContent=editId?'':'';
@@ -250,8 +251,15 @@ function restoreDraft(){
   var k=draftKey(),raw=k?lsGet(k):null;if(!raw)return;
   try{var d=JSON.parse(raw);if(d&&d.entry&&typeof d.entry==='object'){entry=Object.assign(blank(false),d.entry);editId=d.editId||null;editMeta=d.editMeta||null;}}catch(e){}
 }
+var blindOn=false;
+function paintBlind(){
+  var b=$('#bblind');if(!b)return;
+  b.hidden=!!editId;b.classList.toggle('on',blindOn);b.setAttribute('aria-pressed',blindOn?'true':'false');
+  b.textContent=blindOn?'À l\'aveugle : activé':'À l\'aveugle : désactivé';
+  $('#bsave').textContent=editId?'Mettre à jour le vin':(blindOn?'Enregistrer sans nom':'Enregistrer dans le journal');
+}
 function resetForm(){
-  entry=blank(true);editId=null;editMeta=null;var k=draftKey();if(k)lsDel(k);syncAll();
+  blindOn=false;entry=blank(true);editId=null;editMeta=null;var k=draftKey();if(k)lsDel(k);syncAll();
 }
 
 /* ---------- API, compte et journal ---------- */
@@ -391,8 +399,8 @@ async function deleteAccount(ev){
 
 /* ---------- enregistrer / vider ---------- */
 var clearArmed=false,clearTimer=null;
-async function saveEntry(blind){
-  blind=blind===true;
+async function saveEntry(){
+  var blind=blindOn&&!editId;
   if(!blind&&!String(entry.nom||'').trim()){
     $('#nom-err').hidden=false;
     var i=els.nom.input;i.focus();i.scrollIntoView({block:'center',behavior:'smooth'});return;
@@ -748,8 +756,8 @@ function segFilter(box,opts,get,set){
 /* ---------- démarrage ---------- */
 buildForm();buildProfile();syncAll();renderLexique();
 document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){show(t.dataset.tab);});});
-$('#bsave').addEventListener('click',function(){saveEntry();});
-$('#bblind').addEventListener('click',function(){saveEntry(true);});
+$('#bsave').addEventListener('click',saveEntry);
+$('#bblind').addEventListener('click',function(){blindOn=!blindOn;paintBlind();});
 $('#bclear').addEventListener('click',clearForm);
 $('#jdl').addEventListener('click',downloadXlsx);
 $('#xlfile').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];e.target.value='';if(f)importXlsx(f);});
