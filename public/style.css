@@ -146,8 +146,10 @@ label.btn{display:inline-flex;align-items:center}
 /* cépages */
 .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
 .filters .inp{max-width:340px;flex:1 1 220px}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));align-items:start}
-.cep{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;min-width:0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));align-items:stretch;grid-auto-rows:1fr}
+.grid:has(.cep-d:not([hidden])){grid-auto-rows:auto;align-items:start}
+.cep{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.cep>.cep-a{margin-top:auto}
 .cep-h{display:flex;gap:10px;align-items:center}
 .cep-h h3{font-family:var(--f-display);font-style:italic;font-weight:600;font-size:22px;line-height:1.15}
 .cep-h .dot{width:16px;height:16px}
