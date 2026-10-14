@@ -9,7 +9,7 @@ var SCALE={
   type:['Blanc','Rosé','Rouge'], eff:['Tranquille','Pétillant','Mousseux'], limp:['Limpide','Trouble'], icol:['Pâle','Moyenne','Intense'],
   cond:['Net','Défaut apparent'], inez:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
   dev:['Jeune','En développement','Pleinement développé','Fatigué'], suc:['Sec','Demi-sec','Moelleux','Liquoreux'],
-  n5:['Faible','Moyenne -','Moyenne','Moyenne +','Élevée'], alc:['Faible','Moyen','Fort'], corps:['Léger','Moyen -','Moyen','Moyen +','Plein'],
+  n5:['Faible','Moyenne -','Moyenne','Moyenne +','Élevée'], tan5:['Faible','Moyenne -','Moyenne','Moyenne +','Puissants'], alc:['Faible','Moyen','Fort'], corps:['Léger','Moyen -','Moyen','Moyen +','Plein'],
   iboc:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'], fin:['Courte','Moyenne -','Moyenne','Moyenne +','Longue'], yn:['Oui','Non'],
   qual:['Mauvaise','Passable','Bonne','Très bonne','Exceptionnelle'],
   mat:['Trop jeune','À boire maintenant (potentiel de garde)','À boire maintenant (pas de potentiel)','Trop vieux / en déclin']
@@ -27,7 +27,7 @@ var F={
   aobs:{l:'Autres observations',kind:'area',ph:'dépôt, larmes, bulles…',wide:1},
   cond:{l:'Condition',kind:'seg',s:'cond'}, inez:{l:'Intensité',kind:'seg',s:'inez'}, dev:{l:'Développement',kind:'seg',s:'dev'},
   anez:{l:'Caractéristiques aromatiques',kind:'aroma',ph:'agrumes, pomme verte, brioche…',wide:1},
-  suc:{l:'Sucrosité',kind:'seg',s:'suc'}, aci:{l:'Acidité',kind:'seg',s:'n5'}, tan:{l:'Tanin (surtout les rouges)',kind:'seg',s:'n5'},
+  suc:{l:'Sucrosité',kind:'seg',s:'suc'}, aci:{l:'Acidité',kind:'seg',s:'n5'}, tan:{l:'Tanin (surtout les rouges)',kind:'seg',s:'tan5'},
   ttan:{l:'Texture du tanin',kind:'text',ph:'grain fin, souple, rugueux…'}, alc:{l:'Alcool',kind:'seg',s:'alc'}, corps:{l:'Corps',kind:'seg',s:'corps'},
   mousse:{l:'Mousse (vins effervescents)',kind:'text',ph:'fine, persistante…'}, iboc:{l:'Intensité aromatique',kind:'seg',s:'iboc'}, fin:{l:'Finale',kind:'seg',s:'fin'},
   aboc:{l:'Caractéristiques aromatiques',kind:'aroma',ph:'citron vert, minéral…',wide:1}, bobs:{l:'Autres observations',kind:'area',ph:'texture, minéralité…',wide:1},
@@ -407,8 +407,8 @@ function sessionLost(){
   toast('Ta session a expiré : reconnecte-toi.');
   setTimeout(function(){location.reload();},1200);
 }
-/* anciennes fiches : « Profonde » est devenu « Intense », alcool « Élevé » est devenu « Fort » (affichage ; réécrit à la prochaine sauvegarde) */
-function legacyFix(e){if(e&&e.icol==='Profonde')e.icol='Intense';if(e&&e.alc==='Élevé')e.alc='Fort';return e;}
+/* anciennes fiches : « Profonde » est devenu « Intense », alcool « Élevé » est devenu « Fort », tanin « Élevée » est devenu « Puissants » (affichage ; réécrit à la prochaine sauvegarde) */
+function legacyFix(e){if(e&&e.icol==='Profonde')e.icol='Intense';if(e&&e.alc==='Élevé')e.alc='Fort';if(e&&e.tan==='Élevée')e.tan='Puissants';return e;}
 function kindOf(e){return e&&e.kind==='spi'?'spi':'vin';}
 function refilter(){entries=allEntries.filter(function(e){return kindOf(e)===mode;});}
 function upsertLocal(list){
