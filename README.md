@@ -35,16 +35,16 @@ Dans le Worker : **Settings**, **Variables and Secrets**, **Add** :
 
 Sans ce secret, toute personne qui connaît l'adresse du site peut créer un compte. Pour fermer les inscriptions, change le code.
 
-### 4. Spiritueux (réservés pendant les tests)
+### 4. Spiritueux
 
-Le site contient aussi la fiche spiritueux. Tant que le secret ci-dessous n'existe pas, personne ne la voit, et le serveur refuse les fiches spiritueux.
+Le site contient aussi la fiche spiritueux, ouverte à tous les comptes : un sélecteur **Vins / Spiritueux** apparaît sous le titre.
 
-Dans le Worker : **Settings**, **Variables and Secrets**, **Add** :
+Pour la réserver à certains comptes (par exemple pendant des tests), ajoute dans le Worker, **Settings**, **Variables and Secrets** :
 
 - Nom : `SPIRITS_USERS`
-- Valeur : les identifiants autorisés, séparés par des virgules (par exemple `pingugu,noe`). Mets `*` pour ouvrir à tout le monde.
+- Valeur : les identifiants autorisés, séparés par des virgules (par exemple `pingugu,noe`).
 
-Les comptes autorisés voient un sélecteur **Vins / Spiritueux** sous le titre. Chaque journal reste séparé.
+Supprime ce secret (ou mets `*`) pour rouvrir à tout le monde. Le serveur refuse les fiches spiritueux des autres comptes.
 
 ### 5. Partager
 

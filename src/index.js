@@ -17,10 +17,11 @@ const FIELD_KEYS = ['kind', 'tex', 'fnat', 'exp', 'date', 'deg', 'nom', 'prod', 
   'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com'];
 const LONG_KEYS = new Set(['tex', 'aobs', 'anez', 'aboc', 'bobs', 'jqual', 'com']);
 
-/* Le mode « spiritueux » est réservé aux comptes listés dans SPIRITS_USERS (séparés par des virgules ; * = tout le monde). */
+/* Le mode « spiritueux » est ouvert à tous les comptes. Pour le réserver à certains comptes, définir SPIRITS_USERS
+   (identifiants séparés par des virgules) ; la valeur * ou l'absence de variable ouvre à tout le monde. */
 function spiritsAllowed(env, username) {
-  const raw = String(env.SPIRITS_USERS || '').toLowerCase();
-  if (raw.trim() === '*') return true;
+  const raw = String(env.SPIRITS_USERS || '').toLowerCase().trim();
+  if (!raw || raw === '*') return true;
   return raw.split(',').map((x) => x.trim()).filter(Boolean).includes(String(username || '').toLowerCase());
 }
 const publicUser = (env, username) => ({ username, spirits: spiritsAllowed(env, username) });
