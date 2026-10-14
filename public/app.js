@@ -6,7 +6,7 @@ var CEPAGES=window.CEPAGES||[];var SPIRITS=window.SPIRITS||[];
 var CFG={};
 CFG.vin=(function(){
 var SCALE={
-  type:['Blanc','Rosé','Rouge'], eff:['Tranquille','Pétillant','Mousseux'], limp:['Limpide','Trouble'], icol:['Pâle','Moyenne','Profonde'],
+  type:['Blanc','Rosé','Rouge'], eff:['Tranquille','Pétillant','Mousseux'], limp:['Limpide','Trouble'], icol:['Pâle','Moyenne','Intense'],
   cond:['Net','Défaut apparent'], inez:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
   dev:['Jeune','En développement','Pleinement développé','Fatigué'], suc:['Sec','Demi-sec','Moelleux','Liquoreux'],
   n5:['Faible','Moyenne -','Moyenne','Moyenne +','Élevée'], alc:['Faible','Moyen','Élevé'], corps:['Léger','Moyen -','Moyen','Moyen +','Plein'],
@@ -87,7 +87,7 @@ return {SCALE:SCALE,COLORS:COLORS,HEX:HEX,TYPEHEX:TYPEHEX,F:F,SECTIONS:SECTIONS,
 })();
 CFG.spi=(function(){
 var SCALE={
-  type:['Whisky','Rhum','Brandy','Gin','Vodka','Agave','Liqueur','Autre'], limp:['Limpide','Trouble'], icol:['Incolore','Pâle','Moyenne','Profonde','Opaque'],
+  type:['Whisky','Rhum','Brandy','Gin','Vodka','Agave','Liqueur','Autre'], limp:['Limpide','Trouble'], icol:['Incolore','Pâle','Moyenne','Intense','Opaque'],
   cond:['Net','Défaut apparent'], i6:['Neutre','Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'], i5:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
   suc:['Sec','Demi-sec','Moyen','Doux'], fin:['Courte','Moyenne -','Moyenne','Moyenne +','Longue'],
   fnat:['Neutre','Simple','Certaine complexité','Très complexe'], yn:['Oui','Non'],
@@ -407,10 +407,12 @@ function sessionLost(){
   toast('Ta session a expiré : reconnecte-toi.');
   setTimeout(function(){location.reload();},1200);
 }
+/* anciennes fiches : « Profonde » est devenu « Intense » (affichage ; réécrit à la prochaine sauvegarde) */
+function legacyFix(e){if(e&&e.icol==='Profonde')e.icol='Intense';return e;}
 function kindOf(e){return e&&e.kind==='spi'?'spi':'vin';}
 function refilter(){entries=allEntries.filter(function(e){return kindOf(e)===mode;});}
 function upsertLocal(list){
-  list.forEach(function(e){var i=allEntries.findIndex(function(x){return x.id===e.id;});if(i>=0)allEntries[i]=e;else allEntries.push(e);});refilter();
+  list.forEach(function(e){legacyFix(e);var i=allEntries.findIndex(function(x){return x.id===e.id;});if(i>=0)allEntries[i]=e;else allEntries.push(e);});refilter();
 }
 var store={
   save:async function(e){var r=await api('PUT','/api/journal/'+encodeURIComponent(e.id),e);upsertLocal([r.entry]);renderJournal();return r.entry;},
@@ -428,7 +430,7 @@ var store={
 };
 async function loadJournal(){
   jfail=false;ready=false;renderJournal();
-  try{var r=await api('GET','/api/journal');allEntries=r.entries||[];refilter();ready=true;}
+  try{var r=await api('GET','/api/journal');allEntries=(r.entries||[]).map(legacyFix);refilter();ready=true;}
   catch(e){jfail=true;}
   renderJournal();
 }
