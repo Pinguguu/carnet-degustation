@@ -206,3 +206,8 @@ label.btn{display:inline-flex;align-items:center}
 
 #bblind.on{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:600;box-shadow:0 0 0 2px var(--accent)}
 #bblind.on::before{content:'● ';color:var(--accent)}
+
+.modesw{margin-top:10px}
+:root[data-mode="spi"]{--accent:#8A4A12;--accent-soft:#F4E3CF}
+@media (prefers-color-scheme:dark){:root[data-mode="spi"]:not([data-theme="light"]){--accent:#E0A060;--accent-soft:#3A2615;--accent-ink:#1D1209}}
+:root[data-theme="dark"][data-mode="spi"]{--accent:#E0A060;--accent-soft:#3A2615;--accent-ink:#1D1209}

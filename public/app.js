@@ -1,8 +1,10 @@
 (function(){
 'use strict';
-var CEPAGES=window.CEPAGES||[];
+var CEPAGES=window.CEPAGES||[];var SPIRITS=window.SPIRITS||[];
 
 /* ---------- données ---------- */
+var CFG={};
+CFG.vin=(function(){
 var SCALE={
   type:['Blanc','Rosé','Rouge'], eff:['Tranquille','Pétillant','Mousseux'], limp:['Limpide','Trouble'], icol:['Pâle','Moyenne','Profonde'],
   cond:['Net','Défaut apparent'], inez:['Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
@@ -70,6 +72,120 @@ var LEX=[
 ];
 LEX.forEach(function(l){l.g=l.g.map(function(x){return [x[0],x[1].split(', ')];});});
 
+var EXH={date:'Date',nom:'Vin / cuvée',prod:'Producteur',app:'Région / appellation',cep:'Cépage(s)',mil:'Millésime',type:'Type',eff:'Effervescence',
+  limp:'Limpidité',icol:'Intensité couleur',col:'Couleur',aobs:'Obs. apparence',cond:'Condition (nez)',inez:'Intensité nez',anez:'Arômes nez',dev:'Développement',
+  suc:'Sucrosité',aci:'Acidité',tan:'Tanin',ttan:'Texture du tanin',alc:'Alcool',corps:'Corps',mousse:'Mousse',iboc:'Intensité arômes bouche',aboc:'Arômes bouche',
+  fin:'Finale',bobs:'Obs. bouche',bal:'Équilibre',lon:'Longueur',int:'Intensité',cpx:'Complexité',qual:'Qualité',jqual:'Justification qualité',mat:'Maturité',
+  abv:'Alcool indiqué (% vol.)',prix:'Prix (€)',deg:'Dégustateur',com:'Commentaire'};
+var EXW={date:12,nom:28,prod:22,app:24,cep:20,mil:10,type:9,eff:13,limp:11,icol:13,col:12,aobs:28,cond:15,inez:14,anez:34,dev:18,suc:11,aci:11,tan:11,ttan:18,
+  alc:9,corps:10,mousse:14,iboc:14,aboc:34,fin:10,bobs:28,bal:10,lon:10,int:10,cpx:11,qual:16,jqual:34,mat:34,abv:12,prix:9,deg:14,com:36};
+var CONCL=[['bal','Équilibre'],['lon','Longueur'],['int','Intensité'],['cpx','Complexité'],['qual','Qualité'],['mat','Maturité']];
+var SCALES=[['Apparence',[['limp','Limpidité'],['icol','Intensité couleur']]],['Nez',[['cond','Condition'],['inez','Intensité'],['dev','Développement']]],
+ ['Bouche',[['suc','Sucrosité'],['aci','Acidité et tanin'],['alc','Alcool'],['corps','Corps'],['iboc','Intensité aromatique'],['fin','Finale']]],['Conclusions',[['qual','Qualité'],['mat','Maturité']]]];
+return {SCALE:SCALE,COLORS:COLORS,HEX:HEX,TYPEHEX:TYPEHEX,F:F,SECTIONS:SECTIONS,PROFILE:PROFILE,DETAIL:DETAIL,JCOLS:JCOLS,FIELDKEYS:FIELDKEYS,LEX:LEX,EXH:EXH,EXW:EXW,CONCL:CONCL,SCALES:SCALES};
+})();
+CFG.spi=(function(){
+var SCALE={
+  type:['Whisky','Rhum','Brandy','Gin','Vodka','Agave','Liqueur','Autre'], limp:['Limpide','Trouble'], icol:['Incolore','Pâle','Moyenne','Profonde','Opaque'],
+  cond:['Net','Défaut apparent'], i6:['Neutre','Légère','Moyenne -','Moyenne','Moyenne +','Prononcée'],
+  suc:['Sec','Demi-sec','Moyen','Doux'], fin:['Courte','Moyenne -','Moyenne','Moyenne +','Longue'],
+  fnat:['Neutre','Simple','Certaine complexité','Très complexe'], yn:['Oui','Non'],
+  qual:['Défectueux','Faible','Acceptable','Bon','Très bon','Exceptionnel']
+};
+var COLORS=['Paille','Or','Ambre','Cuivre','Acajou','Brun'];
+var HEX={'Paille':'#EEDF9A','Or':'#DDB544','Ambre':'#C4862B','Cuivre':'#B5622B','Acajou':'#7A3418','Brun':'#4A2A18'};
+var TYPEHEX={Whisky:'#C4862B',Rhum:'#8A4A12',Brandy:'#B5622B',Gin:'#9DB8C4',Vodka:'#C9D3D8',Agave:'#D6C58A',Liqueur:'#A83259',Autre:'#9A8F82'};
+
+var F={
+  date:{l:'Date',kind:'date'}, nom:{l:'Spiritueux / marque',kind:'text',ph:'ex. Clément Rhum Vieux VSOP',wide:1},
+  prod:{l:'Producteur / distillerie',kind:'text'}, app:{l:'Origine (pays, région)',kind:'text'}, cep:{l:'Matière première',kind:'text',ph:'canne, orge maltée, raisin, agave…'},
+  mil:{l:'Âge / millésime',kind:'text',ph:'ex. 12 ans, 2015, VSOP'}, prix:{l:'Prix (€)',kind:'text',mode:'decimal'}, abv:{l:'Alcool indiqué (% vol.)',kind:'text',mode:'decimal'},
+  type:{l:'Catégorie',kind:'seg',s:'type',wide:1},
+  limp:{l:'Limpidité',kind:'seg',s:'limp'}, icol:{l:'Intensité de la couleur',kind:'seg',s:'icol'}, col:{l:'Couleur',kind:'color'},
+  aobs:{l:'Autres observations',kind:'area',ph:'trouble au louching, particules, jambes…',wide:1},
+  cond:{l:'Condition',kind:'seg',s:'cond'}, inez:{l:'Intensité aromatique',kind:'seg',s:'i6',wide:1},
+  anez:{l:'Caractéristiques aromatiques',kind:'aroma',ph:'malt, vanille, fumée, agrumes…',wide:1},
+  suc:{l:'Sucrosité',kind:'seg',s:'suc'}, iboc:{l:'Intensité aromatique',kind:'seg',s:'i6',wide:1},
+  tex:{l:'Texture et autres sensations',kind:'area',ph:'rond, huileux, chaleureux, rugueux, amertume, astringence…',wide:1},
+  aboc:{l:'Caractéristiques aromatiques',kind:'aroma',ph:'caramel, poivre, fruits secs…',wide:1},
+  fin:{l:'Longueur de la finale',kind:'seg',s:'fin'}, fnat:{l:'Nature de la finale',kind:'seg',s:'fnat'},
+  bal:{l:'Équilibre',kind:'seg',s:'yn'}, lon:{l:'Longueur et intensité',kind:'seg',s:'yn'}, cpx:{l:'Complexité',kind:'seg',s:'yn'}, exp:{l:'Expressivité',kind:'seg',s:'yn'},
+  qual:{l:'Niveau de qualité',kind:'seg',s:'qual',wide:1}, jqual:{l:'Justification de la qualité',kind:'area',wide:1}, com:{l:'Commentaire libre',kind:'area',wide:1}
+};
+var SECTIONS=[
+  {t:'Le spiritueux',keys:['date','blind','nom','prod','app','cep','mil','prix','abv','type']},
+  {n:1,t:'Apparence',keys:['limp','icol','col','aobs']},
+  {n:2,t:'Nez',keys:['cond','inez','anez']},
+  {n:3,t:'Bouche',keys:['suc','tex','iboc','aboc','fin','fnat']},
+  {n:4,t:'Conclusions',keys:['bal','lon','cpx','exp','qual','jqual','com']}
+];
+var PROFILE=[['inez','Intensité nez'],['suc','Sucrosité'],['iboc','Intensité bouche'],['fin','Finale']];
+var DETAIL=[['Le spiritueux',['cep','mil','prix','abv']],['Apparence',['limp','icol','col','aobs']],['Nez',['cond','inez','anez']],
+  ['Bouche',['suc','tex','iboc','aboc','fin','fnat']],['Conclusions',['bal','lon','cpx','exp','qual','jqual','com']]];
+var JCOLS=['date','nom','prod','app','cep','mil','type','abv','prix','limp','icol','col','aobs','cond','inez','anez','suc','tex','iboc','aboc','fin','fnat','bal','lon','cpx','exp','qual','jqual','com'];
+var FIELDKEYS=Object.keys(F);
+
+var LEX=[
+ {n:'Matières premières',s:'ce que le produit de départ apporte',g:[
+  ['Céréales','pain, biscuit, malt, céréale, bière, pâte crue, maïs'],
+  ['Raisin','raisin frais, fleurs blanches, muscat, vin blanc'],
+  ['Canne à sucre','canne fraîche, herbe coupée, mélasse, sucre brun'],
+  ['Agave','agave cuite, poivre, terre, végétal, agrumes'],
+  ['Fruits','pomme, poire, cerise, prune, pêche, abricot, agrumes'],
+  ['Botaniques et épices','genièvre, coriandre, angélique, réglisse, poivre, cannelle, anis'],
+  ['Floral, herbacé','rose, violette, camomille, herbe fraîche, menthe, thym']]},
+ {n:'Procédés',s:'fermentation, distillation, fumée',g:[
+  ['Fermentation','levure, bière, beurre, yaourt, fromage'],
+  ['Esters','banane, ananas, fruits tropicaux, bonbon, poire, vernis'],
+  ['Têtes','solvant, dissolvant, alcool pur, vernis à ongles'],
+  ['Queues','savon, cuir, viande, soufre, caoutchouc, huile'],
+  ['Fumée','tourbe, fumée, goudron, cendre, iode, médicinal']]},
+ {n:'Chêne et vieillissement',s:'fût, maturation, âge',g:[
+  ['Chêne','vanille, noix de coco, cèdre, santal, clou de girofle, bois frais'],
+  ['Torréfaction','caramel, toast, café, chocolat, fumé, brûlé'],
+  ['Fruits secs et cuits','raisin sec, figue, pruneau, fruits confits, marmelade'],
+  ['Oxydatif, rancio','noix, noisette, amande, champignon, cire, tabac, cuir, rancio']]}
+];
+LEX.forEach(function(l){l.g=l.g.map(function(x){return [x[0],x[1].split(', ')];});});
+
+var EXH={date:'Date',nom:'Spiritueux',prod:'Producteur / distillerie',app:'Origine',cep:'Matière première',mil:'Âge / millésime',type:'Catégorie',abv:'Alcool indiqué (% vol.)',prix:'Prix (€)',
+  limp:'Limpidité',icol:'Intensité couleur',col:'Couleur',aobs:'Obs. apparence',cond:'Condition (nez)',inez:'Intensité nez',anez:'Arômes nez',
+  suc:'Sucrosité',tex:'Texture et sensations',iboc:'Intensité arômes bouche',aboc:'Arômes bouche',fin:'Finale (longueur)',fnat:'Finale (nature)',
+  bal:'Équilibre',lon:'Longueur et intensité',cpx:'Complexité',exp:'Expressivité',qual:'Qualité',jqual:'Justification qualité',com:'Commentaire'};
+var EXW={date:12,nom:28,prod:22,app:24,cep:20,mil:14,type:12,abv:12,prix:9,limp:11,icol:13,col:12,aobs:28,cond:15,inez:14,anez:34,suc:11,tex:30,iboc:14,aboc:34,
+  fin:12,fnat:18,bal:10,lon:14,cpx:11,exp:12,qual:16,jqual:34,com:36};
+var CONCL=[['bal','Équilibre'],['lon','Longueur, intensité'],['cpx','Complexité'],['exp','Expressivité'],['qual','Qualité']];
+var SCALES=[['Apparence',[['limp','Limpidité'],['icol','Intensité couleur']]],['Nez',[['cond','Condition'],['inez','Intensité']]],
+ ['Bouche',[['suc','Sucrosité'],['iboc','Intensité aromatique'],['fin','Longueur de la finale'],['fnat','Nature de la finale']]],['Conclusions',[['qual','Qualité']]]];
+return {SCALE:SCALE,COLORS:COLORS,HEX:HEX,TYPEHEX:TYPEHEX,F:F,SECTIONS:SECTIONS,PROFILE:PROFILE,DETAIL:DETAIL,JCOLS:JCOLS,FIELDKEYS:FIELDKEYS,LEX:LEX,EXH:EXH,EXW:EXW,CONCL:CONCL,SCALES:SCALES};
+})();
+var WORDS={
+ vin:{nom:'Renseigne au moins le nom du vin.',nouveau:'Nouveau vin',maj:'Mettre à jour le vin',ce:'ce vin',aucun:'Aucun vin enregistré',apparait:'le vin apparaît ici',
+  count:function(n){return ' vin'+(n>1?'s':'');},nomatch:'Aucun vin ne correspond à cette recherche.',del:'Vin',slug:'vin',
+  tab:'Cépages',profil:'Profil du vin',jlede:'Chaque vin enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.',
+  jq:'Chercher un vin, un cépage, une région…',clede:'Les cépages à connaître : où ils poussent, ce qu\'ils donnent au nez et en bouche, et leur structure sur l\'échelle à cinq niveaux de la fiche.',
+  cq:'Chercher un cépage, une région, un arôme…',cn:function(n){return n+' cépage'+(n>1?'s':'');},cnone:'Aucun cépage ne correspond.',
+  colh:' (selon le type de vin)',ghost:['Chablis 1er Cru','Domaine X · Bourgogne · Chardonnay · 2022','Blanc','Très bonne','#DDB544'],
+  jf:[['Tous',''],['Blanc','Blanc'],['Rosé','Rosé'],['Rouge','Rouge']],cf:[['Tous',''],['Blancs','Blanc'],['Rouges','Rouge']]},
+ spi:{nom:'Renseigne au moins le nom du spiritueux.',nouveau:'Nouveau spiritueux',maj:'Mettre à jour la fiche',ce:'ce spiritueux',aucun:'Aucun spiritueux enregistré',apparait:'le spiritueux apparaît ici',
+  count:function(n){return ' spiritueux';},nomatch:'Aucun spiritueux ne correspond à cette recherche.',del:'Spiritueux',slug:'spiritueux',
+  tab:'Catégories',profil:'Profil du spiritueux',jlede:'Chaque spiritueux enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.',
+  jq:'Chercher un spiritueux, une catégorie, une origine…',clede:'Les catégories de spiritueux à connaître : d\'où elles viennent, comment elles sont produites et ce qu\'elles donnent au nez et en bouche.',
+  cq:'Chercher une catégorie, une origine, un arôme…',cn:function(n){return n+' catégorie'+(n>1?'s':'');},cnone:'Aucune catégorie ne correspond.',
+  colh:'',ghost:['Clément VSOP','Habitation Clément · Martinique · canne · VSOP','Rhum','Très bon','#C4862B'],
+  jf:null,cf:null}
+};
+WORDS.spi.jf=[['Tous','']].concat(['Whisky','Rhum','Brandy','Gin','Vodka','Agave','Liqueur','Autre'].map(function(t){return [t,t];}));
+WORDS.spi.cf=[['Tous','']].concat(['Whisky','Rhum','Brandy','Gin','Vodka','Agave','Liqueur'].map(function(t){return [t,t];}));
+var CATS={vin:null,spi:null};
+var mode='vin',SCALE,COLORS,HEX,TYPEHEX,F,SECTIONS,PROFILE,DETAIL,JCOLS,FIELDKEYS,LEX,EXH,EXW,CONCL,SCALES,WD;
+function applyConfig(m){
+  var c=CFG[m];mode=m;WD=WORDS[m];
+  SCALE=c.SCALE;COLORS=c.COLORS;HEX=c.HEX;TYPEHEX=c.TYPEHEX;F=c.F;SECTIONS=c.SECTIONS;PROFILE=c.PROFILE;DETAIL=c.DETAIL;JCOLS=c.JCOLS;
+  FIELDKEYS=c.FIELDKEYS;LEX=c.LEX;EXH=c.EXH;EXW=c.EXW;CONCL=c.CONCL;SCALES=c.SCALES;
+  document.documentElement.setAttribute('data-mode',m);
+}
+applyConfig('vin');
 /* ---------- utilitaires ---------- */
 function $(s,r){return (r||document).querySelector(s);}
 function h(tag,attrs){
@@ -101,7 +217,7 @@ function levels(t){
 }
 
 /* ---------- état ---------- */
-var entry,editId=null,editMeta=null,entries=[],ready=false,jfail=false,me=null,libs={};
+var entry,editId=null,editMeta=null,allEntries=[],entries=[],ready=false,jfail=false,me=null,libs={};
 var els={},toastTimer=null,draftTimer=null,openIds={},jfilter={q:'',type:''},cfilter={q:'',col:''},cOpen={};
 function blank(keepDeg){var e={date:today()};if(keepDeg&&entry&&entry.deg)e.deg=entry.deg;return e;}
 entry=blank(false);
@@ -120,7 +236,7 @@ function buildField(k){
     c=h('input',{class:'inp',id:'f-'+k,type:f.kind==='date'?'date':'text',placeholder:f.ph||null,inputmode:f.mode||null,autocomplete:'off',
       oninput:function(){setVal(k,c.value,true);}});
     els[k]={input:c};w.append(labelFor(k),c);
-    if(k==='nom')w.append(h('p',{class:'err',id:'nom-err',hidden:true},'Renseigne au moins le nom du vin.'));
+    if(k==='nom')w.append(h('p',{class:'err',id:'nom-err',hidden:true},WD.nom));
   }else if(f.kind==='area'){
     c=h('textarea',{class:'ta',id:'f-'+k,rows:2,placeholder:f.ph||null,oninput:function(){setVal(k,c.value,true);}});
     els[k]={input:c};w.append(labelFor(k),c);
@@ -152,12 +268,12 @@ function buildField(k){
   }else if(f.kind==='color'){
     var box2=h('div',{class:'swatches',role:'radiogroup','aria-labelledby':'l-col'});
     els[k]={box:box2};
-    w.append(h('span',{class:'lab',id:'l-col'},f.l+' (selon le type de vin)'),box2);
+    w.append(h('span',{class:'lab',id:'l-col'},f.l+WD.colh),box2);
   }
   return w;
 }
 function buildForm(){
-  var st=$('#fstack');
+  var st=$('#fstack');st.textContent='';
   st.append(h('div',{class:'editbar',id:'editbar',hidden:true},
     h('span',{id:'edittxt'}),
     h('button',{class:'btn sm',type:'button',onclick:function(){resetForm();toast('Modification annulée');}},'Annuler la modification')));
@@ -170,7 +286,7 @@ function buildForm(){
   });
 }
 function buildProfile(){
-  var p=$('#profile');
+  var p=$('#profile');p.textContent='';
   els.sum={dot:h('span',{class:'p-dot'}),name:h('p',{class:'p-name'}),meta:h('p',{class:'p-meta'}),rows:{},concl:{}};
   p.append(h('div',{class:'p-head'},els.sum.dot,h('div',null,els.sum.name,els.sum.meta)));
   PROFILE.forEach(function(r){
@@ -181,7 +297,7 @@ function buildProfile(){
     p.append(h('div',{class:'prow'},h('span',{class:'k'},r[1]),h('div',{class:'gauge','aria-hidden':'true'},cells),v));
   });
   var c=h('div',{class:'concl'});
-  [['bal','Équilibre'],['lon','Longueur'],['int','Intensité'],['cpx','Complexité'],['qual','Qualité'],['mat','Maturité']].forEach(function(r){
+  CONCL.forEach(function(r){
     var v=h('span');els.sum.concl[r[0]]=v;c.append(h('div',{class:'r'},h('span',null,r[1]),v));
   });
   p.append(c);
@@ -190,7 +306,7 @@ function buildProfile(){
 /* ---------- fiche : état et synchro ---------- */
 function setVal(k,v,fromInput){
   entry[k]=v;
-  if(k==='type'&&entry.col&&(COLORS[v]||[]).indexOf(entry.col)<0)entry.col='';
+  if(k==='type'&&entry.col&&!Array.isArray(COLORS)&&(COLORS[v]||[]).indexOf(entry.col)<0)entry.col='';
   if(!fromInput)syncField(k);
   if(k==='type')renderColors();
   if(els[k]&&els[k].chips)syncChips(k);
@@ -216,8 +332,9 @@ function toggleTerm(k,t){
 }
 function renderColors(){
   var box=els.col.box;box.textContent='';
-  if(!entry.type){box.append(h('p',{class:'hint'},'Choisis d’abord le type de vin dans « Le vin ».'));return;}
-  COLORS[entry.type].forEach(function(c){
+  var list=Array.isArray(COLORS)?COLORS:COLORS[entry.type];
+  if(!list){box.append(h('p',{class:'hint'},'Choisis d’abord le type de vin dans « Le vin ».'));return;}
+  list.forEach(function(c){
     var on=entry.col===c;
     box.append(h('button',{type:'button',role:'radio','aria-checked':on?'true':'false',class:'swb'+(on?' on':''),
       onclick:function(){setVal('col',entry.col===c?'':c);}},h('i',{style:'background:'+HEX[c]}),c));
@@ -229,7 +346,7 @@ function syncAll(){
 function gaugeFill(cells,idx){cells.forEach(function(c,i){c.classList.toggle('on',idx>=0&&i<=idx);});}
 function renderSummary(){
   var s=els.sum;
-  s.name.textContent=entry.nom||'Nouveau vin';
+  s.name.textContent=entry.nom||WD.nouveau;
   var meta=[entry.prod,entry.app,entry.mil].filter(Boolean).join(' · ');
   s.meta.textContent=meta||'Le profil se dessine au fil de la dégustation.';
   s.dot.style.background=entry.col?HEX[entry.col]:(entry.type?TYPEHEX[entry.type]:'');
@@ -237,18 +354,18 @@ function renderSummary(){
     var k=r[0],row=s.rows[k],i=SCALE[F[k].s].indexOf(entry[k]);
     gaugeFill(row.cells,i);row.v.textContent=i>=0?entry[k]:'—';
   });
-  ['bal','lon','int','cpx','qual','mat'].forEach(function(k){s.concl[k].textContent=entry[k]||'—';});
+  Object.keys(s.concl).forEach(function(k){s.concl[k].textContent=entry[k]||'—';});
 }
 function isEmpty(){return FIELDKEYS.every(function(k){return !entry[k]||((k==='date'&&entry[k]===today())||k==='deg');});}
 function updateBar(){
-  $('#bsave').textContent=editId?'Mettre à jour le vin':'Enregistrer dans le journal';
+  $('#bsave').textContent=editId?WD.maj:'Enregistrer dans le journal';
   if(editId)blindOn=false;
   paintBlind();
   var eb=$('#editbar');eb.hidden=!editId;
-  if(editId)$('#edittxt').textContent='Modification de « '+(entry.nom||'ce vin')+' ». Les changements remplacent la ligne du journal.';
+  if(editId)$('#edittxt').textContent='Modification de « '+(entry.nom||WD.ce)+' ». Les changements remplacent la ligne du journal.';
   $('#barnote').textContent=editId?'':'';
 }
-function draftKey(){return me?'carnet-draft-v2:'+me.username:null;}
+function draftKey(){return me?(mode==='spi'?'carnet-spiritueux-draft-v1:':'carnet-draft-v2:')+me.username:null;}
 function writeDraft(){var k=draftKey();if(k)lsSet(k,JSON.stringify({entry:entry,editId:editId,editMeta:editMeta}));}
 function queueDraft(){clearTimeout(draftTimer);draftTimer=setTimeout(writeDraft,400);}
 window.addEventListener('pagehide',function(){if(draftTimer){clearTimeout(draftTimer);draftTimer=null;if(!isEmpty()||editId)writeDraft();}});
@@ -262,7 +379,7 @@ function paintBlind(){
   var b=$('#bblind');if(!b)return;
   b.parentNode.hidden=!!editId;b.classList.toggle('on',blindOn);b.setAttribute('aria-pressed',blindOn?'true':'false');
   b.textContent=blindOn?'À l\'aveugle : activé':'À l\'aveugle : désactivé';
-  $('#bsave').textContent=editId?'Mettre à jour le vin':(blindOn?'Enregistrer sans nom':'Enregistrer dans le journal');
+  $('#bsave').textContent=editId?WD.maj:(blindOn?'Enregistrer sans nom':'Enregistrer dans le journal');
 }
 function resetForm(){
   blindOn=false;entry=blank(true);editId=null;editMeta=null;var k=draftKey();if(k)lsDel(k);syncAll();
@@ -288,8 +405,10 @@ function sessionLost(){
   toast('Ta session a expiré : reconnecte-toi.');
   setTimeout(function(){location.reload();},1200);
 }
+function kindOf(e){return e&&e.kind==='spi'?'spi':'vin';}
+function refilter(){entries=allEntries.filter(function(e){return kindOf(e)===mode;});}
 function upsertLocal(list){
-  list.forEach(function(e){var i=entries.findIndex(function(x){return x.id===e.id;});if(i>=0)entries[i]=e;else entries.push(e);});
+  list.forEach(function(e){var i=allEntries.findIndex(function(x){return x.id===e.id;});if(i>=0)allEntries[i]=e;else allEntries.push(e);});refilter();
 }
 var store={
   save:async function(e){var r=await api('PUT','/api/journal/'+encodeURIComponent(e.id),e);upsertLocal([r.entry]);renderJournal();return r.entry;},
@@ -303,11 +422,11 @@ var store={
     }catch(err){err.done=done;throw err;}
     return done;
   },
-  remove:async function(id){await api('DELETE','/api/journal/'+encodeURIComponent(id));entries=entries.filter(function(x){return x.id!==id;});renderJournal();}
+  remove:async function(id){await api('DELETE','/api/journal/'+encodeURIComponent(id));allEntries=allEntries.filter(function(x){return x.id!==id;});refilter();renderJournal();}
 };
 async function loadJournal(){
   jfail=false;ready=false;renderJournal();
-  try{var r=await api('GET','/api/journal');entries=r.entries||[];ready=true;}
+  try{var r=await api('GET','/api/journal');allEntries=r.entries||[];refilter();ready=true;}
   catch(e){jfail=true;}
   renderJournal();
 }
@@ -360,7 +479,11 @@ async function enterApp(user){
   me=user;
   $('#authwrap').hidden=true;$('#app').hidden=false;
   $('#acname').textContent=user.username;
-  restoreDraft();syncAll();
+  var ok=!!user.spirits;$('#modesw').hidden=!ok;
+  var want=ok&&lsGet('carnet-mode')==='spi'?'spi':'vin';
+  if(want!==mode)applyConfig(want);
+  entry=blank(false);editId=null;editMeta=null;
+  restoreDraft();rebuildAll();
   show(startTab());
   await loadJournal();
 }
@@ -413,6 +536,7 @@ async function saveEntry(){
   }
   var now=new Date().toISOString(),o={};
   FIELDKEYS.forEach(function(k){if(entry[k])o[k]=entry[k];});
+  if(mode==='spi')o.kind='spi';
   o.id=editId||newId();o.createdAt=(editMeta&&editMeta.createdAt)||now;o.updatedAt=now;
   var btn=$('#bsave'),btn2=$('#bblind');btn.disabled=true;btn2.disabled=true;
   try{
@@ -453,18 +577,19 @@ function renderJournal(){
   if(!ready){list.append(h('p',{class:'hint'},'Chargement du journal…'));$('#jn').textContent='';return;}
   if(!entries.length){
     $('#jn').textContent='';
-    var ex=h('div',{class:'entry ghost','aria-hidden':'true'},h('div',{class:'rh'},h('span',{class:'dot',style:'background:#DDB544'}),
-      h('div',null,h('div',{class:'e-name'},'Chablis 1er Cru ',h('span',{class:'tagex'},'exemple')),h('div',{class:'e-meta'},'Domaine X · Bourgogne · Chardonnay · 2022')),
-      h('div',{class:'e-side'},h('span',{class:'pill'},'Blanc'),h('span',{class:'pill q'},'Très bonne'))));
-    list.append(h('div',{class:'empty'},h('h3',null,'Aucun vin enregistré'),
-      h('p',{class:'hint'},'Remplis la fiche puis appuie sur « Enregistrer dans le journal » : le vin apparaît ici et la fiche se vide, prête pour le suivant.'),
+    var G=WD.ghost;
+    var ex=h('div',{class:'entry ghost','aria-hidden':'true'},h('div',{class:'rh'},h('span',{class:'dot',style:'background:'+G[4]}),
+      h('div',null,h('div',{class:'e-name'},G[0]+' ',h('span',{class:'tagex'},'exemple')),h('div',{class:'e-meta'},G[1])),
+      h('div',{class:'e-side'},h('span',{class:'pill'},G[2]),h('span',{class:'pill q'},G[3]))));
+    list.append(h('div',{class:'empty'},h('h3',null,WD.aucun),
+      h('p',{class:'hint'},'Remplis la fiche puis appuie sur « Enregistrer dans le journal » : '+WD.apparait+' et la fiche se vide, prête pour le suivant.'),
       h('div',null,h('button',{class:'btn pri',type:'button',onclick:function(){show('fiche');}},'Ouvrir la fiche')),ex));
     return;
   }
   var rows=entries.filter(function(e){return matchEntry(e,jfilter.q)&&(!jfilter.type||e.type===jfilter.type);});
   rows.sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''))||String(b.createdAt||'').localeCompare(String(a.createdAt||''));});
-  $('#jn').textContent=rows.length+' / '+entries.length+' vin'+(entries.length>1?'s':'');
-  if(!rows.length){list.append(h('p',{class:'hint'},'Aucun vin ne correspond à cette recherche.'));return;}
+  $('#jn').textContent=rows.length+' / '+entries.length+WD.count(entries.length);
+  if(!rows.length){list.append(h('p',{class:'hint'},WD.nomatch));return;}
   rows.forEach(function(e){list.append(entryEl(e));});
 }
 function entryEl(e){
@@ -492,7 +617,7 @@ function fillDetail(det,e){
   del.addEventListener('click',async function(){
     if(!armed){armed=true;del.textContent='Confirmer la suppression';del.classList.add('warn');t=setTimeout(function(){armed=false;del.textContent='Supprimer';del.classList.remove('warn');},3500);return;}
     clearTimeout(t);
-    try{await store.remove(e.id);delete openIds[e.id];toast('« '+(e.nom||'Vin')+' » supprimé');}catch(err){toast('Suppression impossible : '+((err&&err.message)||'réessaie.'));}
+    try{await store.remove(e.id);delete openIds[e.id];toast('« '+(e.nom||WD.del)+' » supprimé');}catch(err){toast('Suppression impossible : '+((err&&err.message)||'réessaie.'));}
   });
   det.append(h('div',{class:'acts'},h('button',{class:'btn sm pri',type:'button',onclick:function(){downloadSheet(e);}},'Télécharger la fiche'),h('button',{class:'btn sm',type:'button',onclick:function(){startEdit(e);}},'Modifier dans la fiche'),del));
 }
@@ -500,7 +625,7 @@ function startEdit(e){
   var n=blank(false);FIELDKEYS.forEach(function(k){if(e[k])n[k]=e[k];});
   entry=n;editId=e.id;editMeta={createdAt:e.createdAt};syncAll();queueDraft();show('fiche');window.scrollTo(0,0);
 }
-function slug(t){return norm(t).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||'vin';}
+function slug(t){return norm(t).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||WD.slug;}
 function sheetModel(e){
   var groups=[];
   SECTIONS.forEach(function(sec){
@@ -573,13 +698,6 @@ function saveFile(name,data){
 function needData(){if(!entries.length){toast('Le journal est vide pour l’instant.');return false;}return true;}
 
 /* ---------- Excel : export et import ---------- */
-var EXH={date:'Date',nom:'Vin / cuvée',prod:'Producteur',app:'Région / appellation',cep:'Cépage(s)',mil:'Millésime',type:'Type',eff:'Effervescence',
-  limp:'Limpidité',icol:'Intensité couleur',col:'Couleur',aobs:'Obs. apparence',cond:'Condition (nez)',inez:'Intensité nez',anez:'Arômes nez',dev:'Développement',
-  suc:'Sucrosité',aci:'Acidité',tan:'Tanin',ttan:'Texture du tanin',alc:'Alcool',corps:'Corps',mousse:'Mousse',iboc:'Intensité arômes bouche',aboc:'Arômes bouche',
-  fin:'Finale',bobs:'Obs. bouche',bal:'Équilibre',lon:'Longueur',int:'Intensité',cpx:'Complexité',qual:'Qualité',jqual:'Justification qualité',mat:'Maturité',
-  abv:'Alcool indiqué (% vol.)',prix:'Prix (€)',deg:'Dégustateur',com:'Commentaire'};
-var EXW={date:12,nom:28,prod:22,app:24,cep:20,mil:10,type:9,eff:13,limp:11,icol:13,col:12,aobs:28,cond:15,inez:14,anez:34,dev:18,suc:11,aci:11,tan:11,ttan:18,
-  alc:9,corps:10,mousse:14,iboc:14,aboc:34,fin:10,bobs:28,bal:10,lon:10,int:10,cpx:11,qual:16,jqual:34,mat:34,abv:12,prix:9,deg:14,com:36};
 function sortedEntries(){return entries.slice().sort(function(a,b){return String(a.date||'').localeCompare(String(b.date||''))||String(a.createdAt||'').localeCompare(String(b.createdAt||''));});}
 async function buildXlsx(){
   await loadLib('/vendor/exceljs.min.js');
@@ -651,7 +769,7 @@ async function importXlsx(file){
   var rev={id:'id'};Object.keys(EXH).forEach(function(k){rev[norm(EXH[k])]=k;});
   var hdr={},hasNom=false;
   ws.getRow(1).eachCell(function(c,n){var k=rev[norm(cellVal(c.value,''))];if(k){hdr[n]=k;if(k==='nom')hasNom=true;}});
-  if(!hasNom){toast('Colonne « Vin / cuvée » introuvable : utilise un fichier téléchargé depuis ce carnet.');return;}
+  if(!hasNom){toast('Colonne « '+EXH.nom+' » introuvable : utilise un fichier téléchargé depuis ce carnet.');return;}
   var list=[];
   for(var r=2;r<=ws.rowCount;r++){
     var row=ws.getRow(r),o={},id='';
@@ -662,14 +780,15 @@ async function importXlsx(file){
     });
     if(!Object.keys(o).length)continue;
     if(!o.date)o.date=today();
+    if(mode==='spi')o.kind='spi';
     o.id=/^[A-Za-z0-9_\-]{1,60}$/.test(id)?id:newId();
     list.push(o);
   }
-  if(!list.length){toast('Aucun vin trouvé dans ce fichier.');return;}
+  if(!list.length){toast('Aucune fiche trouvée dans ce fichier.');return;}
   var ok=0;
   try{ok=await store.saveMany(list);}
-  catch(e){toast((e.done?e.done+' vin(s) importé(s) avant une erreur : ':'Import impossible : ')+((e&&e.message)||'réessaie.'));return;}
-  toast(ok+' vin'+(ok>1?'s':'')+' importé'+(ok>1?'s':'')+' depuis Excel');
+  catch(e){toast((e.done?e.done+' fiche(s) importée(s) avant une erreur : ':'Import impossible : ')+((e&&e.message)||'réessaie.'));return;}
+  toast(ok+' fiche'+(ok>1?'s':'')+' importée'+(ok>1?'s':'')+' depuis Excel');
 }
 
 /* ---------- cépages ---------- */
@@ -680,32 +799,33 @@ function gaugeRange(rng,txt){
 function renderCepages(){
   var g=$('#cgrid');g.textContent='';
   var q=norm(cfilter.q).split(/\s+/).filter(Boolean);
-  var rows=CEPAGES.filter(function(c){
-    if(cfilter.col&&c.c.indexOf(cfilter.col)!==0)return false;
+  var rows=(mode==='spi'?SPIRITS:CEPAGES).filter(function(c){
+    if(cfilter.col&&(mode==='spi'?c.c!==cfilter.col:c.c.indexOf(cfilter.col)!==0))return false;
     var hay=norm([c.n,c.reg,c.ter,c.aro,c.gout,c.ex].join(' '));
     return q.every(function(t){return hay.indexOf(t)>=0;});
   });
-  $('#cn').textContent=rows.length+' cépage'+(rows.length>1?'s':'');
-  if(!rows.length){g.append(h('p',{class:'hint'},'Aucun cépage ne correspond.'));return;}
+  $('#cn').textContent=WD.cn(rows.length);
+  if(!rows.length){g.append(h('p',{class:'hint'},WD.cnone));return;}
   rows.forEach(function(c){
-    var open=!!cOpen[c.n],red=c.c.indexOf('Rouge')===0;
+    var open=!!cOpen[mode+c.n],red=c.c.indexOf('Rouge')===0;
     var d=h('div',{class:'cep-d',hidden:!open},
-      h('div',null,h('b',null,'Terroir et climat'),c.ter),h('div',null,h('b',null,'Arômes typiques'),c.aro),
-      h('div',null,h('b',null,'Goût et structure'),c.gout),h('div',null,h('b',null,'Vins et appellations types'),c.ex));
+      h('div',null,h('b',null,mode==='spi'?'Matière première et production':'Terroir et climat'),c.ter),h('div',null,h('b',null,'Arômes typiques'),c.aro),
+      h('div',null,h('b',null,'Goût et structure'),c.gout),h('div',null,h('b',null,mode==='spi'?'Exemples de marques ou de styles':'Vins et appellations types'),c.ex));
     var tog=h('button',{class:'btn sm',type:'button','aria-expanded':open?'true':'false',onclick:function(){
-      open=!open;cOpen[c.n]=open;d.hidden=!open;tog.setAttribute('aria-expanded',open?'true':'false');tog.textContent=open?'Masquer le détail':'Voir le détail';}},open?'Masquer le détail':'Voir le détail');
+      open=!open;cOpen[mode+c.n]=open;d.hidden=!open;tog.setAttribute('aria-expanded',open?'true':'false');tog.textContent=open?'Masquer le détail':'Voir le détail';}},open?'Masquer le détail':'Voir le détail');
     var use=h('button',{class:'btn sm',type:'button',onclick:function(){useCepage(c);}},'Utiliser dans la fiche');
     var rng=h('div',{class:'rng'});
-    [['Acidité',c.ac],['Tanin',c.ta],['Corps',c.co]].forEach(function(r){
+    (mode==='spi'?[['Intensité',c.ac],['Corps',c.co]]:[['Acidité',c.ac],['Tanin',c.ta],['Corps',c.co]]).forEach(function(r){
       if(!r[1]||r[1]==='—')return;
       rng.append(h('span',{class:'k'},r[0]),gaugeRange(levels(r[1]),r[0]+' : '+r[1]),h('span',{class:'t'},r[1]));
     });
     g.append(h('article',{class:'cep'},
-      h('div',{class:'cep-h'},h('span',{class:'dot',style:'background:'+(red?'#8E1230':'#EEDF7E')}),h('h3',null,c.n),h('span',{class:'cep-c'},c.c)),
+      h('div',{class:'cep-h'},h('span',{class:'dot',style:'background:'+(mode==='spi'?(TYPEHEX[c.c]||'#9A8F82'):(red?'#8E1230':'#EEDF7E'))}),h('h3',null,c.n),h('span',{class:'cep-c'},c.c)),
       h('p',{class:'cep-r'},c.reg),rng,d,h('div',{class:'cep-a'},tog,use)));
   });
 }
 function useCepage(c){
+  if(mode==='spi'){setVal('type',c.c);show('fiche');toast('Catégorie « '+c.c+' » choisie dans la fiche');return;}
   var base=c.n.replace(/\s*\(.*\)\s*$/,'');
   var arr=splitTerms(entry.cep);
   if(arr.map(norm).indexOf(norm(base))<0)arr.push(base);
@@ -716,7 +836,7 @@ function useCepage(c){
 
 /* ---------- lexique ---------- */
 function renderLexique(){
-  var root=$('#lex');
+  var root=$('#lex');root.textContent='';
   LEX.forEach(function(l){
     var col=h('div',{class:'lcol'},h('h3',null,l.n),h('p',{class:'s'},l.s));
     l.g.forEach(function(g){
@@ -724,13 +844,10 @@ function renderLexique(){
     });
     root.append(col);
   });
-  var sc=$('#scales');sc.append(h('h2',null,'Échelles de la fiche'));
-  [['Apparence',[['limp','Limpidité'],['icol','Intensité couleur']]],
-   ['Nez',[['cond','Condition'],['inez','Intensité'],['dev','Développement']]],
-   ['Bouche',[['suc','Sucrosité'],['aci','Acidité et tanin'],['alc','Alcool'],['corps','Corps'],['iboc','Intensité aromatique'],['fin','Finale']]],
-   ['Conclusions',[['qual','Qualité'],['mat','Maturité']]]].forEach(function(g){
+  var sc=$('#scales');sc.textContent='';sc.append(h('h2',null,'Échelles de la fiche'));
+  SCALES.forEach(function(g){
     g[1].forEach(function(r,i){
-      var key=r[0]==='aci'?'aci':r[0];
+      var key=r[0];
       sc.append(h('div',{class:'srow'},h('div',{class:'k'},h('span',{class:'st'},i===0?g[0]:' '),r[1]),
         h('div',{class:'sc'},SCALE[F[key].s].map(function(o,j){return h('span',{class:'chip','data-i':String(j+1)},o);}))));
     });
@@ -751,6 +868,7 @@ function toast(msg,actionLabel,action){
   t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.hidden=true;},4500);
 }
 function segFilter(box,opts,get,set){
+  box.textContent='';
   opts.forEach(function(o){
     var b=h('button',{type:'button',role:'radio',class:'opt','aria-checked':'false',onclick:function(){set(o[1]);sync();}},o[0]);
     b._v=o[1];box.append(b);
@@ -760,16 +878,37 @@ function segFilter(box,opts,get,set){
 }
 
 /* ---------- démarrage ---------- */
-buildForm();buildProfile();syncAll();renderLexique();
+function applyTexts(){
+  $('#t-cepages').textContent=WD.tab;
+  $('#profile').setAttribute('aria-label',WD.profil);
+  $('#jlede').textContent=WD.jlede;$('#clede').textContent=WD.clede;
+  $('#jq').placeholder=WD.jq;$('#cq').placeholder=WD.cq;
+  [['m-vin','vin'],['m-spi','spi']].forEach(function(p){var b=$('#'+p[0]),on=mode===p[1];b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');});
+  segFilter($('#jtype'),WD.jf,function(){return jfilter.type;},function(v){jfilter.type=v;renderJournal();});
+  segFilter($('#ccol'),WD.cf,function(){return cfilter.col;},function(v){cfilter.col=v;renderCepages();});
+}
+function rebuildAll(){
+  els={};buildForm();buildProfile();syncAll();renderLexique();applyTexts();refilter();renderJournal();renderCepages();
+}
+function setMode(m){
+  if(m===mode)return;
+  clearTimeout(draftTimer);draftTimer=null;if(!isEmpty()||editId)writeDraft();
+  applyConfig(m);lsSet('carnet-mode',m);
+  entry=blank(false);editId=null;editMeta=null;blindOn=false;
+  jfilter.type='';cfilter.col='';disarm();
+  restoreDraft();rebuildAll();
+  toast(m==='spi'?'Mode spiritueux':'Mode vin');
+}
+buildForm();buildProfile();syncAll();renderLexique();applyTexts();
 document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){show(t.dataset.tab);});});
+$('#m-vin').addEventListener('click',function(){setMode('vin');});
+$('#m-spi').addEventListener('click',function(){setMode('spi');});
 $('#bsave').addEventListener('click',saveEntry);
 $('#bclear').addEventListener('click',clearForm);
 $('#jdl').addEventListener('click',downloadXlsx);
 $('#xlfile').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];e.target.value='';if(f)importXlsx(f);});
 $('#jq').addEventListener('input',function(e){jfilter.q=e.target.value;renderJournal();});
 $('#cq').addEventListener('input',function(e){cfilter.q=e.target.value;renderCepages();});
-segFilter($('#jtype'),[['Tous',''],['Blanc','Blanc'],['Rosé','Rosé'],['Rouge','Rouge']],function(){return jfilter.type;},function(v){jfilter.type=v;renderJournal();});
-segFilter($('#ccol'),[['Tous',''],['Blancs','Blanc'],['Rouges','Rouge']],function(){return cfilter.col;},function(v){cfilter.col=v;renderCepages();});
 renderCepages();
 $('#auform').addEventListener('submit',submitAuth);
 $('#au-m-login').addEventListener('click',function(){setAuthMode('login');});

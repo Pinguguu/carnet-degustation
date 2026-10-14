@@ -1,6 +1,6 @@
 # Carnet de dégustation (WSET SAT)
 
-Site de dégustation avec comptes (identifiant + mot de passe) : fiche en quatre étapes selon l'approche systématique du WSET, journal privé par personne, 33 cépages, lexique d'arômes, export et import Excel, fiche PDF par vin.
+Site de dégustation avec comptes (identifiant + mot de passe) : fiche en quatre étapes selon l'approche systématique du WSET, journal privé par personne, 33 cépages, fiche spiritueux (WSET) avec ses catégories, lexique d'arômes, export et import Excel, fiche PDF par vin.
 
 Hébergé sur **Cloudflare Workers** (le site et l'API) avec une base **D1** (SQLite). Pas de framework : du HTML, du CSS et du JavaScript simples.
 
@@ -35,7 +35,18 @@ Dans le Worker : **Settings**, **Variables and Secrets**, **Add** :
 
 Sans ce secret, toute personne qui connaît l'adresse du site peut créer un compte. Pour fermer les inscriptions, change le code.
 
-### 4. Partager
+### 4. Spiritueux (réservés pendant les tests)
+
+Le site contient aussi la fiche spiritueux. Tant que le secret ci-dessous n'existe pas, personne ne la voit, et le serveur refuse les fiches spiritueux.
+
+Dans le Worker : **Settings**, **Variables and Secrets**, **Add** :
+
+- Nom : `SPIRITS_USERS`
+- Valeur : les identifiants autorisés, séparés par des virgules (par exemple `pingugu,noe`). Mets `*` pour ouvrir à tout le monde.
+
+Les comptes autorisés voient un sélecteur **Vins / Spiritueux** sous le titre. Chaque journal reste séparé.
+
+### 5. Partager
 
 Ouvre `https://carnet-degustation.<ton-sous-domaine>.workers.dev`, crée ton compte, puis envoie l'adresse et le code d'invitation à tes amis. Chacun a son journal, que les autres ne voient pas.
 
@@ -99,6 +110,7 @@ public/index.html     page unique (connexion, fiche, journal, cépages, lexique,
 public/app.js         logique du site
 public/style.css      styles
 public/cepages.js     données des cépages
+public/spiritueux.js  catégories de spiritueux
 public/_headers       en-têtes de sécurité
 public/outils/        outil de réinitialisation de mot de passe
 public/vendor/        ExcelJS et jsPDF (licence MIT), chargés à la demande

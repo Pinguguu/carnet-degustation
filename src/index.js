@@ -12,10 +12,18 @@ const ID_RE = /^[A-Za-z0-9_-]{1,60}$/;
 const USER_RE = /^[a-z0-9][a-z0-9_.-]{2,23}$/;
 
 // Champs d'une fiche de dégustation (identiques à ceux du site).
-const FIELD_KEYS = ['date', 'deg', 'nom', 'prod', 'app', 'cep', 'mil', 'prix', 'abv', 'type', 'eff', 'limp', 'icol', 'col',
+const FIELD_KEYS = ['kind', 'tex', 'fnat', 'exp', 'date', 'deg', 'nom', 'prod', 'app', 'cep', 'mil', 'prix', 'abv', 'type', 'eff', 'limp', 'icol', 'col',
   'aobs', 'cond', 'inez', 'anez', 'dev', 'suc', 'aci', 'tan', 'ttan', 'alc', 'corps', 'mousse', 'iboc', 'aboc', 'fin',
   'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com'];
-const LONG_KEYS = new Set(['aobs', 'anez', 'aboc', 'bobs', 'jqual', 'com']);
+const LONG_KEYS = new Set(['tex', 'aobs', 'anez', 'aboc', 'bobs', 'jqual', 'com']);
+
+/* Le mode « spiritueux » est réservé aux comptes listés dans SPIRITS_USERS (séparés par des virgules ; * = tout le monde). */
+function spiritsAllowed(env, username) {
+  const raw = String(env.SPIRITS_USERS || '').toLowerCase();
+  if (raw.trim() === '*') return true;
+  return raw.split(',').map((x) => x.trim()).filter(Boolean).includes(String(username || '').toLowerCase());
+}
+const publicUser = (env, username) => ({ username, spirits: spiritsAllowed(env, username) });
 
 class HttpError extends Error {
   constructor(status, message, extra) { super(message); this.status = status; this.extra = extra; }
@@ -179,7 +187,7 @@ async function register(env, request) {
     throw e;
   }
   const cookie = await startSession(env, request, id);
-  return json({ user: { username } }, 201, { 'Set-Cookie': cookie });
+  return json({ user: publicUser(env, username) }, 201, { 'Set-Cookie': cookie });
 }
 
 async function login(env, request) {
@@ -202,7 +210,7 @@ async function login(env, request) {
   }
   await env.DB.prepare('DELETE FROM attempts WHERE key = ?').bind(kUser).run();
   const cookie = await startSession(env, request, row.id);
-  return json({ user: { username } }, 200, { 'Set-Cookie': cookie });
+  return json({ user: publicUser(env, username) }, 200, { 'Set-Cookie': cookie });
 }
 
 async function logout(env, request) {
@@ -255,7 +263,7 @@ async function deleteAccount(env, request) {
 }
 
 /* ---------- journal ---------- */
-function cleanEntry(body) {
+function cleanEntry(body, env, user) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) throw new HttpError(400, 'Fiche invalide.');
   const out = {};
   for (const k of FIELD_KEYS) {
@@ -266,6 +274,8 @@ function cleanEntry(body) {
     if (!v) continue;
     out[k] = v.slice(0, LONG_KEYS.has(k) ? 4000 : 300);
   }
+  if (out.kind !== 'spi') delete out.kind;
+  else if (!spiritsAllowed(env, user.username)) throw new HttpError(403, 'Les spiritueux ne sont pas encore ouverts pour ce compte.');
   if (!Object.keys(out).length) throw new HttpError(400, 'La fiche est vide.');
   if (out.date && !/^\d{4}-\d{2}-\d{2}$/.test(out.date)) delete out.date;
   return out;
@@ -301,7 +311,7 @@ async function putEntry(env, request, rawId) {
   const user = await requireUser(env, request);
   const id = decodeURIComponent(rawId);
   if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
-  const clean = cleanEntry(await readJson(request));
+  const clean = cleanEntry(await readJson(request), env, user);
   const exists = await env.DB.prepare('SELECT 1 AS x FROM entries WHERE user_id = ? AND id = ?').bind(user.id, id).first();
   if (!exists && (await countEntries(env, user.id)) >= MAX_ENTRIES) throw new HttpError(413, 'Le journal est plein (' + MAX_ENTRIES + ' vins).');
   const now = new Date().toISOString();
@@ -328,7 +338,7 @@ async function bulkEntries(env, request) {
   const now = new Date().toISOString();
   const ids = [], stmts = [];
   for (const item of list) {
-    const clean = cleanEntry(item);
+    const clean = cleanEntry(item, env, user);
     const id = item && typeof item.id === 'string' && ID_RE.test(item.id) ? item.id : 'v' + randomToken(9);
     ids.push(id);
     stmts.push(upsertStatement(env, user.id, id, clean, now));
@@ -359,7 +369,7 @@ async function route(request, env) {
   if (path === '/api/me') {
     if (method === 'GET') {
       const user = await requireUser(env, request);
-      return json({ user: { username: user.username } });
+      return json({ user: publicUser(env, user.username) });
     }
     if (method === 'DELETE') return deleteAccount(env, request);
   }

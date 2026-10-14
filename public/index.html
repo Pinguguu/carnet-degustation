@@ -48,6 +48,7 @@
 <header class="top"><div class="wrap">
   <h1>Carnet de dégustation</h1>
   <p class="sub">Approche systématique · apparence, nez, bouche, conclusions</p>
+  <div class="seg modesw" id="modesw" role="radiogroup" aria-label="Type de dégustation" hidden><button type="button" role="radio" class="opt on" id="m-vin" aria-checked="true">Vins</button><button type="button" role="radio" class="opt" id="m-spi" aria-checked="false">Spiritueux</button></div>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" id="t-fiche" data-tab="fiche" aria-controls="v-fiche" aria-selected="true">Fiche</button>
     <button class="tab" role="tab" id="t-journal" data-tab="journal" aria-controls="v-journal" aria-selected="false">Journal<span class="n" id="jcount"></span></button>
@@ -66,7 +67,7 @@
   </section>
 
   <section class="view" id="v-journal" role="tabpanel" aria-labelledby="t-journal" hidden>
-    <p class="lede">Chaque vin enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.</p>
+    <p class="lede" id="jlede">Chaque vin enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.</p>
     <div class="tools">
       <input class="inp" id="jq" type="search" placeholder="Chercher un vin, un cépage, une région…" aria-label="Chercher dans le journal">
       <div class="seg" id="jtype" role="radiogroup" aria-label="Filtrer par type"></div>
@@ -80,7 +81,7 @@
   </section>
 
   <section class="view" id="v-cepages" role="tabpanel" aria-labelledby="t-cepages" hidden>
-    <p class="lede">Les cépages à connaître : où ils poussent, ce qu'ils donnent au nez et en bouche, et leur structure sur l'échelle à cinq niveaux de la fiche.</p>
+    <p class="lede" id="clede">Les cépages à connaître : où ils poussent, ce qu'ils donnent au nez et en bouche, et leur structure sur l'échelle à cinq niveaux de la fiche.</p>
     <div class="filters">
       <input class="inp" id="cq" type="search" placeholder="Chercher un cépage, une région, un arôme…" aria-label="Chercher un cépage">
       <div class="seg" id="ccol" role="radiogroup" aria-label="Filtrer par couleur"></div>
@@ -137,6 +138,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="/cepages.js"></script>
+<script src="/spiritueux.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
