@@ -355,7 +355,7 @@ async function submitAuth(ev){
   btn.disabled=false;$('#au-pass').value='';$('#au-invite').value='';
   await enterApp(user);
 }
-function startTab(){var hash=(location.hash||'').slice(1);return ['fiche','journal','cepages','lexique','compte'].indexOf(hash)>=0?hash:'fiche';}
+function startTab(){var hash=(location.hash||'').slice(1);return ['fiche','journal','cepages','compte'].indexOf(hash)>=0?hash:'fiche';}
 async function enterApp(user){
   me=user;
   $('#authwrap').hidden=true;$('#app').hidden=false;
