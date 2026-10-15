@@ -161,7 +161,7 @@ label.btn{display:inline-flex;align-items:center}
 .rng .t{grid-column:2;font-family:var(--f-mono);font-size:11px;margin-bottom:4px}
 .cep-d{display:grid;gap:10px;font-size:14px;border-top:1px solid var(--line);padding-top:12px}
 .cep-d b{display:block;font-size:12px;font-weight:600;color:var(--muted)}
-.cep-a{display:flex;gap:8px;flex-wrap:wrap}
+.cep-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
 
 /* lexique */
 .cols3{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));align-items:start}
@@ -230,3 +230,24 @@ label.btn{display:inline-flex;align-items:center}
   .e-side{grid-column:2;justify-content:flex-start}
   #bblind{width:100%}
 }
+
+/* accords mets et vins */
+.aprinc{margin-bottom:16px}
+.aprinc-b{display:grid;gap:10px;padding:4px 0 14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+.ap{display:grid;gap:2px;font-size:14px}
+.ap b{font-weight:600}
+.ap span{color:var(--muted)}
+.sty{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.sty li{display:grid;gap:4px}
+.sty li b{font-weight:600}
+.chip.lnk{cursor:pointer;color:var(--accent);border-color:var(--accent);background:var(--surface)}
+.chip.lnk:hover{background:var(--accent-soft)}
+.cep.acc h3{font-size:20px}
+.sugg{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:6px}
+.sugg-t{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.sugg-i{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;min-height:40px;text-align:left;font-size:14px;font-weight:600}
+.sugg-i:hover{border-color:var(--accent)}
+.sugg-a{color:var(--accent);font-size:18px;line-height:1}
+.sugg-more{background:none;border:0;padding:6px 0;text-align:left;color:var(--accent);font-weight:600;font-size:13.5px;text-decoration:underline;min-height:36px}
+.sugg[hidden]{display:none}
+.agrid,.agrid:has(.cep-d:not([hidden])){grid-auto-rows:auto;align-items:stretch}

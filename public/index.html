@@ -53,6 +53,7 @@
     <button class="tab" role="tab" id="t-fiche" data-tab="fiche" aria-controls="v-fiche" aria-selected="true">Fiche</button>
     <button class="tab" role="tab" id="t-journal" data-tab="journal" aria-controls="v-journal" aria-selected="false">Journal<span class="n" id="jcount"></span></button>
     <button class="tab" role="tab" id="t-cepages" data-tab="cepages" aria-controls="v-cepages" aria-selected="false">Cépages</button>
+    <button class="tab" role="tab" id="t-accords" data-tab="accords" aria-controls="v-accords" aria-selected="false">Accords</button>
     <button class="tab" role="tab" id="t-lexique" hidden data-tab="lexique" aria-controls="v-lexique" aria-selected="false">Lexique</button>
     <button class="tab" role="tab" id="t-compte" data-tab="compte" aria-controls="v-compte" aria-selected="false">Compte</button>
   </nav>
@@ -88,6 +89,17 @@
       <span class="count cright" id="cn"></span>
     </div>
     <div class="grid" id="cgrid"></div>
+  </section>
+
+  <section class="view" id="v-accords" role="tabpanel" aria-labelledby="t-accords" hidden>
+    <p class="lede" id="alede"></p>
+    <details class="lex aprinc"><summary id="aprinc-t">Les principes d'un bon accord</summary><div class="aprinc-b" id="aprinc"></div></details>
+    <div class="filters">
+      <input class="inp" id="aq" type="search" aria-label="Chercher un accord">
+      <div class="seg" id="agrp" role="radiogroup" aria-label="Filtrer par type de plat"></div>
+      <span class="count cright" id="an"></span>
+    </div>
+    <div class="grid agrid" id="agrid"></div>
   </section>
 
   <section class="view" id="v-lexique" role="tabpanel" aria-labelledby="t-lexique" hidden>
@@ -139,6 +151,7 @@
 
 <script src="/cepages.js"></script>
 <script src="/spiritueux.js"></script>
+<script src="/accords.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

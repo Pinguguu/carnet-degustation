@@ -14,8 +14,8 @@ const USER_RE = /^[a-z0-9][a-z0-9_.-]{2,23}$/;
 // Champs d'une fiche de dégustation (identiques à ceux du site).
 const FIELD_KEYS = ['kind', 'aveugle', 'tex', 'fnat', 'exp', 'date', 'deg', 'nom', 'prod', 'app', 'cep', 'mil', 'prix', 'abv', 'type', 'eff', 'limp', 'icol', 'col',
   'aobs', 'cond', 'inez', 'anez', 'dev', 'suc', 'aci', 'tan', 'ttan', 'alc', 'corps', 'mousse', 'iboc', 'aboc', 'fin',
-  'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com'];
-const LONG_KEYS = new Set(['tex', 'aobs', 'anez', 'aboc', 'bobs', 'jqual', 'com']);
+  'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com', 'acc'];
+const LONG_KEYS = new Set(['tex', 'aobs', 'anez', 'aboc', 'bobs', 'jqual', 'com', 'acc']);
 
 /* Le mode « spiritueux » est ouvert à tous les comptes. Pour le réserver à certains comptes, définir SPIRITS_USERS
    (identifiants séparés par des virgules) ; la valeur * ou l'absence de variable ouvre à tout le monde. */

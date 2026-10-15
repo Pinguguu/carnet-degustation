@@ -40,13 +40,14 @@ var SECTIONS=[
   {n:1,t:'Apparence',keys:['limp','icol','col','aobs']},
   {n:2,t:'Nez',keys:['cond','inez','dev','anez']},
   {n:3,t:'Bouche',keys:['suc','aci','tan','ttan','alc','corps','mousse','iboc','fin','aboc','bobs']},
-  {n:4,t:'Conclusions',keys:['bal','lon','int','cpx','qual','jqual','mat','com']}
+  {n:4,t:'Conclusions',keys:['bal','lon','int','cpx','qual','jqual','mat','acc','com']}
 ];
 var PROFILE=[['inez','Intensité nez'],['suc','Sucrosité'],['aci','Acidité'],['tan','Tanin'],['alc','Alcool'],['corps','Corps'],['iboc','Intensité bouche'],['fin','Finale']];
 var DETAIL=[['Le vin',['cep','eff','prix','abv','deg','aveugle']],['Apparence',['limp','icol','col','aobs']],['Nez',['cond','inez','dev','anez']],
-  ['Bouche',['suc','aci','tan','ttan','alc','corps','mousse','iboc','fin','aboc','bobs']],['Conclusions',['bal','lon','int','cpx','qual','jqual','mat','com']]];
-var JCOLS=['date','nom','prod','app','cep','mil','type','eff','limp','icol','col','aobs','cond','inez','anez','dev','suc','aci','tan','ttan','alc','corps','mousse','iboc','aboc','fin','bobs','bal','lon','int','cpx','qual','jqual','mat','abv','prix','deg','com'];
+  ['Bouche',['suc','aci','tan','ttan','alc','corps','mousse','iboc','fin','aboc','bobs']],['Conclusions',['bal','lon','int','cpx','qual','jqual','mat','acc','com']]];
+var JCOLS=['date','nom','prod','app','cep','mil','type','eff','limp','icol','col','aobs','cond','inez','anez','dev','suc','aci','tan','ttan','alc','corps','mousse','iboc','aboc','fin','bobs','bal','lon','int','cpx','qual','jqual','mat','acc','abv','prix','deg','com'];
 F.aveugle={l:'Dégustation à l\'aveugle',kind:'flag'};
+F.acc={l:'Accords mets',kind:'area',ph:'huîtres, poisson grillé, fromage de chèvre…',wide:1};
 var FIELDKEYS=Object.keys(F);
 
 var LEX=[
@@ -83,6 +84,7 @@ var EXW={date:12,nom:28,prod:22,app:24,cep:20,mil:10,type:9,eff:13,limp:11,icol:
 var CONCL=[['bal','Équilibre'],['lon','Longueur'],['int','Intensité'],['cpx','Complexité'],['qual','Qualité'],['mat','Maturité']];
 var SCALES=[['Apparence',[['limp','Limpidité'],['icol','Intensité couleur']]],['Nez',[['cond','Condition'],['inez','Intensité'],['dev','Développement']]],
  ['Bouche',[['suc','Sucrosité'],['aci','Acidité et tanin'],['alc','Alcool'],['corps','Corps'],['iboc','Intensité aromatique'],['fin','Finale']]],['Conclusions',[['qual','Qualité'],['mat','Maturité']]]];
+EXH.acc='Accords mets';EXW.acc=30;
 return {SCALE:SCALE,COLORS:COLORS,HEX:HEX,TYPEHEX:TYPEHEX,F:F,SECTIONS:SECTIONS,PROFILE:PROFILE,DETAIL:DETAIL,JCOLS:JCOLS,FIELDKEYS:FIELDKEYS,LEX:LEX,EXH:EXH,EXW:EXW,CONCL:CONCL,SCALES:SCALES};
 })();
 CFG.spi=(function(){
@@ -118,13 +120,14 @@ var SECTIONS=[
   {n:1,t:'Apparence',keys:['limp','icol','col','aobs']},
   {n:2,t:'Nez',keys:['cond','inez','anez']},
   {n:3,t:'Bouche',keys:['suc','tex','iboc','aboc','fin','fnat']},
-  {n:4,t:'Conclusions',keys:['bal','lon','cpx','exp','qual','jqual','com']}
+  {n:4,t:'Conclusions',keys:['bal','lon','cpx','exp','qual','jqual','acc','com']}
 ];
 var PROFILE=[['inez','Intensité nez'],['suc','Sucrosité'],['iboc','Intensité bouche'],['fin','Finale']];
 var DETAIL=[['Le spiritueux',['cep','mil','prix','abv','aveugle']],['Apparence',['limp','icol','col','aobs']],['Nez',['cond','inez','anez']],
-  ['Bouche',['suc','tex','iboc','aboc','fin','fnat']],['Conclusions',['bal','lon','cpx','exp','qual','jqual','com']]];
-var JCOLS=['date','nom','prod','app','cep','mil','type','abv','prix','limp','icol','col','aobs','cond','inez','anez','suc','tex','iboc','aboc','fin','fnat','bal','lon','cpx','exp','qual','jqual','com'];
+  ['Bouche',['suc','tex','iboc','aboc','fin','fnat']],['Conclusions',['bal','lon','cpx','exp','qual','jqual','acc','com']]];
+var JCOLS=['date','nom','prod','app','cep','mil','type','abv','prix','limp','icol','col','aobs','cond','inez','anez','suc','tex','iboc','aboc','fin','fnat','bal','lon','cpx','exp','qual','jqual','acc','com'];
 F.aveugle={l:'Dégustation à l\'aveugle',kind:'flag'};
+F.acc={l:'Accords mets',kind:'area',ph:'huîtres, poisson grillé, fromage de chèvre…',wide:1};
 var FIELDKEYS=Object.keys(F);
 
 var LEX=[
@@ -159,19 +162,20 @@ var EXW={date:12,nom:28,prod:22,app:24,cep:20,mil:14,type:12,abv:12,prix:9,limp:
 var CONCL=[['bal','Équilibre'],['lon','Longueur, intensité'],['cpx','Complexité'],['exp','Expressivité'],['qual','Qualité']];
 var SCALES=[['Apparence',[['limp','Limpidité'],['icol','Intensité couleur']]],['Nez',[['cond','Condition'],['inez','Intensité']]],
  ['Bouche',[['suc','Sucrosité'],['iboc','Intensité aromatique'],['fin','Longueur de la finale'],['fnat','Nature de la finale']]],['Conclusions',[['qual','Qualité']]]];
+EXH.acc='Accords mets';EXW.acc=30;
 return {SCALE:SCALE,COLORS:COLORS,HEX:HEX,TYPEHEX:TYPEHEX,F:F,SECTIONS:SECTIONS,PROFILE:PROFILE,DETAIL:DETAIL,JCOLS:JCOLS,FIELDKEYS:FIELDKEYS,LEX:LEX,EXH:EXH,EXW:EXW,CONCL:CONCL,SCALES:SCALES};
 })();
 var WORDS={
  vin:{nom:'Renseigne au moins le nom du vin.',nouveau:'Nouveau vin',maj:'Mettre à jour le vin',ce:'ce vin',aucun:'Aucun vin enregistré',apparait:'le vin apparaît ici',
   count:function(n){return ' vin'+(n>1?'s':'');},nomatch:'Aucun vin ne correspond à cette recherche.',del:'Vin',slug:'vin',
-  tab:'Cépages',profil:'Profil du vin',jlede:'Chaque vin enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.',
+  tab:'Cépages',acc:'Accords mets & vins',alede:'Quel plat pour quel vin : les principes d’un bon accord, puis des suggestions par type de plat avec les styles de vin et les cépages à essayer. Ce sont des pistes à confronter à tes propres dégustations.',aq:'Chercher un plat, un cépage, une appellation…',agr:['Mer','Viandes','Fromages','Épicé et créole','Sucré','Autres'],profil:'Profil du vin',jlede:'Chaque vin enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.',
   jq:'Chercher un vin, un cépage, une région…',clede:'Les cépages à connaître : où ils poussent, ce qu\'ils donnent au nez et en bouche, et leur structure sur l\'échelle à cinq niveaux de la fiche.',
   cq:'Chercher un cépage, une région, un arôme…',cn:function(n){return n+' cépage'+(n>1?'s':'');},cnone:'Aucun cépage ne correspond.',
   colh:' (selon le type de vin)',ghost:['Chablis 1er Cru','Domaine X · Bourgogne · Chardonnay · 2022','Blanc','Très bonne','#DDB544'],
   jf:[['Tous',''],['Blanc','Blanc'],['Rosé','Rosé'],['Rouge','Rouge']],cf:[['Tous',''],['Blancs','Blanc'],['Rouges','Rouge']]},
  spi:{nom:'Renseigne au moins le nom du spiritueux.',nouveau:'Nouveau spiritueux',maj:'Mettre à jour la fiche',ce:'ce spiritueux',aucun:'Aucun spiritueux enregistré',apparait:'le spiritueux apparaît ici',
   count:function(n){return ' spiritueux';},nomatch:'Aucun spiritueux ne correspond à cette recherche.',del:'Spiritueux',slug:'spiritueux',
-  tab:'Catégories',profil:'Profil du spiritueux',jlede:'Chaque spiritueux enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.',
+  tab:'Catégories',acc:'Accords mets & spiritueux',alede:'Quel plat pour quel spiritueux : les principes d’un bon accord, puis des suggestions par type de plat avec les catégories à essayer. Ce sont des pistes à confronter à tes propres dégustations.',aq:'Chercher un plat, une catégorie…',agr:['Cuisine','Mer','Viandes','Fromages','Sucré','Apéritif','Digestif'],profil:'Profil du spiritueux',jlede:'Chaque spiritueux enregistré depuis la fiche arrive ici. Ouvre une ligne pour relire la dégustation complète, la corriger ou la supprimer.',
   jq:'Chercher un spiritueux, une catégorie, une origine…',clede:'Les catégories de spiritueux à connaître : d\'où elles viennent, comment elles sont produites et ce qu\'elles donnent au nez et en bouche.',
   cq:'Chercher une catégorie, une origine, un arôme…',cn:function(n){return n+' catégorie'+(n>1?'s':'');},cnone:'Aucune catégorie ne correspond.',
   colh:'',ghost:['Clément VSOP','Habitation Clément · Martinique · canne · VSOP','Rhum','Très bon','#C4862B'],
@@ -220,7 +224,7 @@ function levels(t){
 
 /* ---------- état ---------- */
 var entry,editId=null,editMeta=null,allEntries=[],entries=[],ready=false,jfail=false,me=null,libs={};
-var els={},toastTimer=null,draftTimer=null,openIds={},jfilter={q:'',type:''},cfilter={q:'',col:''},cOpen={};
+var els={},toastTimer=null,draftTimer=null,openIds={},jfilter={q:'',type:''},cfilter={q:'',col:''},cOpen={},afilter={q:'',g:''},aOpen={};
 function blank(keepDeg){var e={date:today()};if(keepDeg&&entry&&entry.deg)e.deg=entry.deg;return e;}
 entry=blank(false);
 
@@ -289,7 +293,7 @@ function buildForm(){
 }
 function buildProfile(){
   var p=$('#profile');p.textContent='';
-  els.sum={dot:h('span',{class:'p-dot'}),name:h('p',{class:'p-name'}),meta:h('p',{class:'p-meta'}),rows:{},concl:{}};
+  els.sum={sugg:h('div',{class:'sugg'}),dot:h('span',{class:'p-dot'}),name:h('p',{class:'p-name'}),meta:h('p',{class:'p-meta'}),rows:{},concl:{}};
   p.append(h('div',{class:'p-head'},els.sum.dot,h('div',null,els.sum.name,els.sum.meta)));
   PROFILE.forEach(function(r){
     var k=r[0],n=SCALE[F[k].s].length,cells=[];
@@ -303,6 +307,7 @@ function buildProfile(){
     var v=h('span');els.sum.concl[r[0]]=v;c.append(h('div',{class:'r'},h('span',null,r[1]),v));
   });
   p.append(c);
+  p.append(els.sum.sugg);
 }
 
 /* ---------- fiche : état et synchro ---------- */
@@ -357,6 +362,7 @@ function renderSummary(){
     gaugeFill(row.cells,i);row.v.textContent=i>=0?entry[k]:'—';
   });
   Object.keys(s.concl).forEach(function(k){s.concl[k].textContent=entry[k]||'—';});
+  renderSugg();
 }
 function isEmpty(){return FIELDKEYS.every(function(k){return !entry[k]||((k==='date'&&entry[k]===today())||k==='deg');});}
 function updateBar(){
@@ -479,7 +485,7 @@ async function submitAuth(ev){
   btn.disabled=false;$('#au-pass').value='';$('#au-invite').value='';
   await enterApp(user);
 }
-function startTab(){var hash=(location.hash||'').slice(1);return ['fiche','journal','cepages','compte'].indexOf(hash)>=0?hash:'fiche';}
+function startTab(){var hash=(location.hash||'').slice(1);return ['fiche','journal','cepages','accords','compte'].indexOf(hash)>=0?hash:'fiche';}
 async function enterApp(user){
   me=user;
   $('#authwrap').hidden=true;$('#app').hidden=false;
@@ -840,6 +846,71 @@ function useCepage(c){
   show('fiche');toast('« '+base+' » ajouté à la fiche');
 }
 
+
+/* ---------- accords mets et vins ---------- */
+var AC=window.ACCORDS||{principes:[],principesSpi:[],vin:[],spi:[]};
+function addAcc(name){
+  var arr=splitTerms(entry.acc);
+  if(arr.map(norm).indexOf(norm(name))<0)arr.push(name);
+  setVal('acc',arr.join(', '));
+}
+function goCep(name){cfilter.q=name;cfilter.col='';$('#cq').value=name;applyTexts();renderCepages();show('cepages');}
+function accScore(d){
+  var id=d.ideal;if(!id)return null;
+  var got={type:entry.type,corps:SCALE.corps.indexOf(entry.corps),aci:SCALE.n5.indexOf(entry.aci),tan:SCALE.tan5.indexOf(entry.tan),suc:SCALE.suc.indexOf(entry.suc)};
+  var known=(got.type?1:0),score=0,n=0;
+  ['corps','aci','tan','suc'].forEach(function(k){if(got[k]>=0)known++;});
+  if(known<3)return null;
+  if(got.type&&id.type){if(id.type.indexOf(got.type)<0)return -1;n++;score++;}
+  ['corps','aci','tan','suc'].forEach(function(k){
+    if(got[k]<0||!id[k])return;n++;
+    var lo=id[k][0],hi=id[k][1],dist=got[k]<lo?lo-got[k]:(got[k]>hi?got[k]-hi:0);
+    score+=dist===0?1:(dist===1?0.3:-1);
+  });
+  return n?score/n:null;
+}
+function renderSugg(){
+  var box=els.sum&&els.sum.sugg;if(!box)return;box.textContent='';
+  if(mode!=='vin'){box.hidden=true;return;}
+  var rows=[];
+  AC.vin.forEach(function(d){var s=accScore(d);if(s!==null&&s>=0.7)rows.push({d:d,s:s});});
+  rows.sort(function(a,b){return b.s-a.s;});rows=rows.slice(0,3);
+  box.hidden=false;
+  box.append(h('p',{class:'sugg-t'},'Accords suggérés'));
+  if(!rows.length){box.append(h('p',{class:'hint'},'Renseigne le type, le corps, l’acidité, le tanin ou la sucrosité : des plats à essayer apparaissent ici.'));return;}
+  rows.forEach(function(r){
+    box.append(h('button',{type:'button',class:'sugg-i',onclick:function(){addAcc(r.d.n);toast('« '+r.d.n+' » ajouté aux accords de la fiche');}},h('span',null,r.d.n),h('span',{class:'sugg-a','aria-hidden':'true'},'+')));
+  });
+  box.append(h('p',{class:'hint'},'Suggestions indicatives d’après les échelles de la fiche. Touche un plat pour le noter.'));
+  box.append(h('button',{type:'button',class:'sugg-more',onclick:function(){afilter.q='';afilter.g='';$('#aq').value='';applyTexts();renderAccords();show('accords');}},'Voir tous les accords'));
+}
+function renderAccords(){
+  var g=$('#agrid');if(!g)return;g.textContent='';
+  var pr=$('#aprinc');pr.textContent='';
+  (mode==='spi'?AC.principesSpi:AC.principes).forEach(function(p){pr.append(h('div',{class:'ap'},h('b',null,p.t),h('span',null,p.d)));});
+  var q=norm(afilter.q).split(/\s+/).filter(Boolean);
+  var rows=(mode==='spi'?AC.spi:AC.vin).filter(function(d){
+    if(afilter.g&&d.g!==afilter.g)return false;
+    var hay=norm([d.n,d.g,d.ex,d.why,d.avoid].concat(d.styles.map(function(s){return s.s+' '+s.cep.join(' ')+' '+s.app;})).join(' '));
+    return q.every(function(t){return hay.indexOf(t)>=0;});
+  });
+  $('#an').textContent=rows.length+' plat'+(rows.length>1?'s':'');
+  if(!rows.length){g.append(h('p',{class:'hint'},'Aucun accord ne correspond.'));return;}
+  rows.forEach(function(d){
+    var open=!!aOpen[mode+d.id];
+    var det=h('div',{class:'cep-d',hidden:!open},h('div',null,h('b',null,'Pourquoi ça marche'),d.why),h('div',null,h('b',null,'À éviter'),d.avoid));
+    var tog=h('button',{class:'btn sm',type:'button','aria-expanded':open?'true':'false',onclick:function(){
+      open=!open;aOpen[mode+d.id]=open;det.hidden=!open;tog.setAttribute('aria-expanded',open?'true':'false');tog.textContent=open?'Masquer le détail':'Voir le détail';}},open?'Masquer le détail':'Voir le détail');
+    var use=h('button',{class:'btn sm',type:'button',onclick:function(){addAcc(d.n);show('fiche');toast('« '+d.n+' » ajouté aux accords de la fiche');}},'Noter dans la fiche');
+    var sty=h('ul',{class:'sty'});
+    d.styles.forEach(function(s){
+      sty.append(h('li',null,h('b',null,s.s),h('span',{class:'hint'},s.app),
+        s.cep.length?h('span',{class:'chips'},s.cep.map(function(c){return h('button',{type:'button',class:'chip lnk',title:(mode==='spi'?'Voir la catégorie ':'Voir le cépage ')+c,onclick:function(){goCep(c);}},c);})):null));
+    });
+    g.append(h('article',{class:'cep acc'},h('div',{class:'cep-h'},h('h3',null,d.n),h('span',{class:'cep-c'},d.g)),h('p',{class:'cep-r'},d.ex),sty,det,h('div',{class:'cep-a'},tog,use)));
+  });
+}
+
 /* ---------- lexique ---------- */
 function renderLexique(){
   var root=$('#lex');root.textContent='';
@@ -889,19 +960,21 @@ function applyTexts(){
   $('#profile').setAttribute('aria-label',WD.profil);
   $('#jlede').textContent=WD.jlede;$('#clede').textContent=WD.clede;
   $('#jq').placeholder=WD.jq;$('#cq').placeholder=WD.cq;
+  $('#alede').textContent=WD.alede;$('#aq').placeholder=WD.aq;$('#aprinc-t').textContent=mode==='spi'?'Les principes d\'un bon accord avec un spiritueux':'Les principes d\'un bon accord';
+  segFilter($('#agrp'),[['Tous','']].concat(WD.agr.map(function(g){return [g,g];})),function(){return afilter.g;},function(v){afilter.g=v;renderAccords();});
   [['m-vin','vin'],['m-spi','spi']].forEach(function(p){var b=$('#'+p[0]),on=mode===p[1];b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');});
   segFilter($('#jtype'),WD.jf,function(){return jfilter.type;},function(v){jfilter.type=v;renderJournal();});
   segFilter($('#ccol'),WD.cf,function(){return cfilter.col;},function(v){cfilter.col=v;renderCepages();});
 }
 function rebuildAll(){
-  els={};buildForm();buildProfile();syncAll();renderLexique();applyTexts();refilter();renderJournal();renderCepages();
+  els={};buildForm();buildProfile();syncAll();renderLexique();applyTexts();refilter();renderJournal();renderCepages();renderAccords();
 }
 function setMode(m){
   if(m===mode)return;
   clearTimeout(draftTimer);draftTimer=null;if(!isEmpty()||editId)writeDraft();
   applyConfig(m);lsSet('carnet-mode',m);
   entry=blank(false);editId=null;editMeta=null;blindOn=false;
-  jfilter.type='';cfilter.col='';disarm();
+  jfilter.type='';cfilter.col='';afilter.g='';disarm();
   restoreDraft();rebuildAll();
   toast(m==='spi'?'Mode spiritueux':'Mode vin');
 }
@@ -915,7 +988,8 @@ $('#jdl').addEventListener('click',downloadXlsx);
 $('#xlfile').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];e.target.value='';if(f)importXlsx(f);});
 $('#jq').addEventListener('input',function(e){jfilter.q=e.target.value;renderJournal();});
 $('#cq').addEventListener('input',function(e){cfilter.q=e.target.value;renderCepages();});
-renderCepages();
+$('#aq').addEventListener('input',function(e){afilter.q=e.target.value;renderAccords();});
+renderCepages();renderAccords();
 $('#auform').addEventListener('submit',submitAuth);
 $('#au-m-login').addEventListener('click',function(){setAuthMode('login');});
 $('#au-m-register').addEventListener('click',function(){setAuthMode('register');});
