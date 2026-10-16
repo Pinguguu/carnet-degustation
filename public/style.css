@@ -251,3 +251,18 @@ label.btn{display:inline-flex;align-items:center}
 .sugg-more{background:none;border:0;padding:6px 0;text-align:left;color:var(--accent);font-weight:600;font-size:13.5px;text-decoration:underline;min-height:36px}
 .sugg[hidden]{display:none}
 .agrid,.agrid:has(.cep-d:not([hidden])){grid-auto-rows:auto;align-items:stretch}
+
+/* favoris */
+.entry{position:relative}
+.entry .rh{padding-right:56px}
+.favb{position:absolute;top:0;right:4px;width:48px;height:48px;display:grid;place-items:center;background:none;border:0;color:var(--muted);border-radius:8px}
+.favb svg{fill:none;transition:fill .15s,color .15s}
+.favb:hover{color:var(--accent)}
+.favb.on{color:var(--accent)}
+.favb.on svg{fill:currentColor}
+.favb:disabled{opacity:.5}
+.entry.isfav{border-color:var(--accent)}
+.favf{display:inline-flex;gap:4px;align-items:center}
+.favf.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+@media (max-width:640px){.favb{top:2px}}
+@media (prefers-reduced-motion:reduce){.favb svg{transition:none}}
