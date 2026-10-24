@@ -287,3 +287,11 @@ input,select,textarea{border-radius:14px!important}
 @media (max-width:640px){.sec{padding:20px 16px}.tab{padding:8px 12px}}
 .tab[aria-selected="true"] .n{color:inherit;opacity:.85}
 .sec-h .step{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* cœur centré en hauteur sur la ligne */
+.entry{display:grid;grid-template-columns:minmax(0,1fr) 52px}
+.entry .rh{padding-right:0}
+.entry .favb{position:static;top:auto;right:auto;width:52px;height:auto;align-self:stretch;justify-self:center}
+.entry .detail{grid-column:1/-1}
+@media (max-width:640px){.entry .favb{top:auto}}
+.entry .favb{background:transparent}.entry:has(.rh:hover) .favb,.entry .favb:hover{background:var(--surface2)}
