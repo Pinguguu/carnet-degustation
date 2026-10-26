@@ -110,7 +110,11 @@ async function migrate(env) {
   await env.DB.batch(SCHEMA.map((sql) => env.DB.prepare(sql)));
   // Colonne e-mail ajoutée après coup : les bases déjà créées n'en ont pas.
   const { results } = await env.DB.prepare('PRAGMA table_info(users)').all();
-  if (!results.some((c) => c.name === 'email')) await env.DB.prepare('ALTER TABLE users ADD COLUMN email TEXT').run();
+  if (!results.some((c) => c.name === 'email')) {
+    // Deux instances peuvent lancer la migration en même temps : la seconde trouve la colonne déjà là.
+    try { await env.DB.prepare('ALTER TABLE users ADD COLUMN email TEXT').run(); }
+    catch (e) { if (!String(e && e.message).includes('duplicate column')) throw e; }
+  }
   await env.DB.prepare('CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email) WHERE email IS NOT NULL').run();
 }
 function ensureSchema(env) {
