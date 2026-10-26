@@ -452,37 +452,79 @@ function loadLib(src){
 }
 
 /* ---------- écran de connexion ---------- */
-var authMode='login',inviteNeeded=false;
+/* modes : login, register, forgot (demander un lien), reset (choisir un nouveau mot de passe depuis le lien reçu) */
+var authMode='login',inviteNeeded=false,resetToken='';
+var AUTH_BTN={login:'Se connecter',register:'Créer mon compte',forgot:'Envoyer le lien',reset:'Changer le mot de passe'};
 function setAuthMode(m){
   authMode=m;
-  var reg=m==='register';
-  [['au-m-login',!reg],['au-m-register',reg]].forEach(function(p){var b=$('#'+p[0]);b.classList.toggle('on',p[1]);b.setAttribute('aria-checked',p[1]?'true':'false');});
+  var reg=m==='register',forgot=m==='forgot',reset=m==='reset';
+  [['au-m-login',m==='login'],['au-m-register',reg]].forEach(function(p){var b=$('#'+p[0]);b.classList.toggle('on',p[1]);b.setAttribute('aria-checked',p[1]?'true':'false');});
   $('#au-invite-f').hidden=!(reg&&inviteNeeded);
-  $('#au-pass').setAttribute('autocomplete',reg?'new-password':'current-password');
-  $('#au-submit').textContent=reg?'Créer mon compte':'Se connecter';
+  $('#au-email-f').hidden=!reg;
+  $('#au-user').parentNode.hidden=reset;
+  $('#au-user').previousElementSibling.textContent=forgot?'Identifiant ou adresse e-mail':'Identifiant';
+  $('#au-pass-f').hidden=forgot;
+  $('#au-pass-l').textContent=reset?'Nouveau mot de passe (8 caractères minimum)':'Mot de passe';
+  $('#au-pass2-f').hidden=!reset;
+  $('#au-pass').setAttribute('autocomplete',reg||reset?'new-password':'current-password');
+  $('#au-submit').textContent=AUTH_BTN[m];
   $('#au-note').textContent=reg
     ?'Identifiant : 3 à 24 caractères (lettres minuscules, chiffres, point, tiret, tiret bas). Mot de passe : 8 caractères minimum.'
-    :'Mot de passe oublié ? Il n’y a pas d’e-mail : demande à la personne qui gère le site de le réinitialiser.';
-  $('#au-err').hidden=true;
+    :forgot?'Tu recevras un lien pour choisir un nouveau mot de passe, à l’adresse e-mail de ton compte.':'';
+  $('#au-note').hidden=!$('#au-note').textContent;
+  $('#au-forgot').hidden=m!=='login';
+  $('#au-back').hidden=!(forgot||reset);
+  $('#au-err').hidden=true;$('#au-ok').hidden=true;
 }
-function showAuth(msg){
-  $('#app').hidden=true;$('#authwrap').hidden=false;setAuthMode('login');
-  if(msg){$('#au-err').textContent=msg;$('#au-err').hidden=false;}
-  $('#au-user').focus();
+function authErr(msg){$('#au-err').textContent=msg;$('#au-err').hidden=false;}
+function showAuth(msg,mode){
+  $('#app').hidden=true;$('#authwrap').hidden=false;setAuthMode(mode||'login');
+  if(msg)authErr(msg);
+  (mode==='reset'?$('#au-pass'):$('#au-user')).focus();
 }
+function leaveReset(){resetToken='';if(/^#reset=/.test(location.hash))history.replaceState(null,'',location.pathname+location.search);}
 async function submitAuth(ev){
   ev.preventDefault();
+  var btn=$('#au-submit');
+  $('#au-err').hidden=true;$('#au-ok').hidden=true;
+  if(authMode==='forgot'){
+    var login=$('#au-user').value.trim();
+    if(!login){authErr('Saisis ton identifiant ou ton adresse e-mail.');return;}
+    btn.disabled=true;
+    try{await api('POST','/api/forgot',{login:login});}
+    catch(e){authErr(e.message);btn.disabled=false;return;}
+    btn.disabled=false;
+    $('#au-ok').textContent='Si un compte correspond, un e-mail vient de partir avec un lien valable une heure. Pense à regarder dans les indésirables.';
+    $('#au-ok').hidden=false;return;
+  }
+  if(authMode==='reset'){
+    var pw=$('#au-pass').value,pw2=$('#au-pass2').value;
+    if(pw.length<8){authErr('Le nouveau mot de passe doit contenir au moins 8 caractères.');return;}
+    if(pw!==pw2){authErr('Les deux mots de passe sont différents.');return;}
+    btn.disabled=true;
+    var ru=null;
+    try{ru=(await api('POST','/api/reset',{token:resetToken,password:pw})).user;}
+    catch(e){authErr(e.message);btn.disabled=false;return;}
+    btn.disabled=false;$('#au-pass').value='';$('#au-pass2').value='';
+    leaveReset();
+    await enterApp(ru);
+    toast('Mot de passe changé. Tes autres appareils devront se reconnecter.');
+    return;
+  }
   var body={username:$('#au-user').value.trim(),password:$('#au-pass').value};
-  if(!body.username||!body.password){$('#au-err').textContent='Saisis ton identifiant et ton mot de passe.';$('#au-err').hidden=false;return;}
-  if(authMode==='register')body.invite=$('#au-invite').value;
-  var btn=$('#au-submit');btn.disabled=true;$('#au-err').hidden=true;
+  if(!body.username||!body.password){authErr('Saisis ton identifiant et ton mot de passe.');return;}
+  if(authMode==='register'){
+    body.invite=$('#au-invite').value;body.email=$('#au-email').value.trim();
+    if(!body.email){authErr('Saisis ton adresse e-mail : elle sert à récupérer ton mot de passe.');return;}
+  }
+  btn.disabled=true;
   var user=null;
   try{user=(await api('POST',authMode==='login'?'/api/login':'/api/register',body)).user;}
   catch(e){
     if(e.inviteRequired&&!inviteNeeded){inviteNeeded=true;setAuthMode(authMode);}
-    $('#au-err').textContent=e.message;$('#au-err').hidden=false;btn.disabled=false;return;
+    authErr(e.message);btn.disabled=false;return;
   }
-  btn.disabled=false;$('#au-pass').value='';$('#au-invite').value='';
+  btn.disabled=false;$('#au-pass').value='';$('#au-invite').value='';$('#au-email').value='';
   await enterApp(user);
 }
 function startTab(){var hash=(location.hash||'').slice(1);return ['fiche','journal','cepages','accords','compte'].indexOf(hash)>=0?hash:'fiche';}
@@ -490,6 +532,7 @@ async function enterApp(user){
   me=user;
   $('#authwrap').hidden=true;$('#app').hidden=false;
   $('#acname').textContent=user.username;
+  showEmail();
   var ok=!!user.spirits;$('#modesw').hidden=!ok;
   var want=ok&&lsGet('carnet-mode')==='spi'?'spi':'vin';
   if(want!==mode)applyConfig(want);
@@ -497,8 +540,11 @@ async function enterApp(user){
   restoreDraft();rebuildAll();
   show(startTab());
   await loadJournal();
+  if(!user.email)toast('Ajoute ton adresse e-mail dans l’onglet Compte : sans elle, impossible de récupérer ton mot de passe.');
 }
 async function boot(){
+  var rm=/^#reset=([A-Za-z0-9_-]+)$/.exec(location.hash||'');
+  if(rm){resetToken=rm[1];showAuth('','reset');return;}
   var user=null;
   try{user=(await api('GET','/api/me')).user;}
   catch(e){inviteNeeded=!!(e&&e.inviteRequired);showAuth(e&&e.status===0?e.message:'');return;}
@@ -522,6 +568,21 @@ async function changePassword(ev){
   catch(e){showErr('#pw-err',e.message);return;}
   ['#pw-cur','#pw-new','#pw-new2'].forEach(function(x){$(x).value='';});
   toast('Mot de passe changé. Les autres appareils devront se reconnecter.');
+}
+function showEmail(){
+  $('#em-cur').textContent=me&&me.email
+    ?'Adresse actuelle : '+me.email+'. Elle sert uniquement à recevoir un lien si tu oublies ton mot de passe.'
+    :'Aucune adresse enregistrée : ajoute-en une pour pouvoir récupérer ton mot de passe si tu l’oublies.';
+}
+async function changeEmail(ev){
+  ev.preventDefault();showErr('#em-err','');
+  var em=$('#em-new').value.trim(),pw=$('#em-pw').value;
+  if(!em){showErr('#em-err','Saisis ta nouvelle adresse e-mail.');return;}
+  if(!pw){showErr('#em-err','Saisis ton mot de passe pour confirmer.');return;}
+  try{me=(await api('POST','/api/email',{email:em,password:pw})).user;}
+  catch(e){showErr('#em-err',e.message);return;}
+  $('#em-new').value='';$('#em-pw').value='';showEmail();
+  toast('Adresse e-mail enregistrée.');
 }
 var delArmed=false,delTimer=null;
 function disarmDelete(){delArmed=false;clearTimeout(delTimer);var b=$('#del-btn');b.textContent='Supprimer mon compte';b.classList.remove('warn');}
@@ -1003,8 +1064,11 @@ $('#cq').addEventListener('input',function(e){cfilter.q=e.target.value;renderCep
 $('#aq').addEventListener('input',function(e){afilter.q=e.target.value;renderAccords();});
 renderCepages();renderAccords();
 $('#auform').addEventListener('submit',submitAuth);
-$('#au-m-login').addEventListener('click',function(){setAuthMode('login');});
+$('#au-m-login').addEventListener('click',function(){leaveReset();setAuthMode('login');});
 $('#au-m-register').addEventListener('click',function(){setAuthMode('register');});
+$('#au-forgot').addEventListener('click',function(){setAuthMode('forgot');$('#au-user').focus();});
+$('#au-back').addEventListener('click',function(){leaveReset();setAuthMode('login');$('#au-user').focus();});
+$('#emform').addEventListener('submit',changeEmail);
 $('#logout').addEventListener('click',logout);
 $('#pwform').addEventListener('submit',changePassword);
 $('#delform').addEventListener('submit',deleteAccount);

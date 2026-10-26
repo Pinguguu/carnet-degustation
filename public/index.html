@@ -32,14 +32,22 @@
     <form id="auform" novalidate>
       <div class="field"><label class="lab" for="au-user">Identifiant</label>
         <input class="inp" id="au-user" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
-      <div class="field"><label class="lab" for="au-pass">Mot de passe</label>
+      <div class="field" id="au-email-f" hidden><label class="lab" for="au-email">Adresse e-mail</label>
+        <input class="inp" id="au-email" name="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false">
+        <p class="hint">Sert uniquement à récupérer ton mot de passe si tu l’oublies.</p></div>
+      <div class="field" id="au-pass-f"><label class="lab" for="au-pass" id="au-pass-l">Mot de passe</label>
         <input class="inp" id="au-pass" name="password" type="password" autocomplete="current-password"></div>
+      <div class="field" id="au-pass2-f" hidden><label class="lab" for="au-pass2">Répéter le nouveau mot de passe</label>
+        <input class="inp" id="au-pass2" name="password2" type="password" autocomplete="new-password"></div>
       <div class="field" id="au-invite-f" hidden><label class="lab" for="au-invite">Code d’invitation</label>
         <input class="inp" id="au-invite" name="invite" autocomplete="off" autocapitalize="none" spellcheck="false">
         <p class="hint">Le code que t’a donné la personne qui t’invite.</p></div>
       <p class="err" id="au-err" role="alert" hidden></p>
+      <p class="ok" id="au-ok" role="status" hidden></p>
       <button class="btn pri" id="au-submit" type="submit">Se connecter</button>
       <p class="auth-note" id="au-note"></p>
+      <button class="linkbtn" id="au-forgot" type="button">Mot de passe oublié ?</button>
+      <button class="linkbtn" id="au-back" type="button" hidden>Revenir à la connexion</button>
     </form>
   </div>
 </div>
@@ -116,6 +124,16 @@
         <p class="hint">Ton journal est privé : les autres utilisateurs du site ne peuvent pas le voir. La personne qui héberge le site a, comme pour tout site, accès à la base de données.</p>
         <div class="acts"><button class="btn" id="logout" type="button">Se déconnecter</button></div>
       </div>
+      <form class="sec" id="emform" novalidate>
+        <div class="sec-h"><span class="step">Récupération</span><h2>Adresse e-mail</h2></div>
+        <p class="hint" id="em-cur"></p>
+        <div class="field"><label class="lab" for="em-new">Nouvelle adresse e-mail</label>
+          <input class="inp" id="em-new" type="email" autocomplete="email" autocapitalize="none" spellcheck="false"></div>
+        <div class="field"><label class="lab" for="em-pw">Mot de passe</label>
+          <input class="inp" id="em-pw" type="password" autocomplete="current-password"></div>
+        <p class="err" id="em-err" role="alert" hidden></p>
+        <div><button class="btn pri" type="submit">Enregistrer l’adresse</button></div>
+      </form>
       <form class="sec" id="pwform" novalidate>
         <div class="sec-h"><span class="step">Sécurité</span><h2>Changer de mot de passe</h2></div>
         <div class="field"><label class="lab" for="pw-cur">Mot de passe actuel</label>

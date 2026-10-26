@@ -10,6 +10,8 @@ const MAX_ENTRIES = 3000; // vins par compte
 const MAX_BODY = 2000000; // octets, pour un import en lot
 const ID_RE = /^[A-Za-z0-9_-]{1,60}$/;
 const USER_RE = /^[a-z0-9][a-z0-9_.-]{2,23}$/;
+const EMAIL_RE = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]+$/;
+const RESET_MINUTES = 60; // durée de validité d'un lien de réinitialisation
 
 // Champs d'une fiche de dégustation (identiques à ceux du site).
 const FIELD_KEYS = ['kind', 'aveugle', 'tex', 'fnat', 'exp', 'date', 'deg', 'nom', 'prod', 'app', 'cep', 'mil', 'prix', 'abv', 'type', 'eff', 'limp', 'icol', 'col',
@@ -24,7 +26,7 @@ function spiritsAllowed(env, username) {
   if (!raw || raw === '*') return true;
   return raw.split(',').map((x) => x.trim()).filter(Boolean).includes(String(username || '').toLowerCase());
 }
-const publicUser = (env, username) => ({ username, spirits: spiritsAllowed(env, username) });
+const publicUser = (env, username, email) => ({ username, email: email || null, spirits: spiritsAllowed(env, username) });
 
 class HttpError extends Error {
   constructor(status, message, extra) { super(message); this.status = status; this.extra = extra; }
@@ -99,13 +101,25 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS entries_user_date ON entries(user_id, date)`,
   `CREATE TABLE IF NOT EXISTS attempts (key TEXT NOT NULL, ts INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS attempts_key ON attempts(key, ts)`,
+  `CREATE TABLE IF NOT EXISTS password_resets (
+     token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL)`,
 ];
 let schemaReady = null;
+async function migrate(env) {
+  await env.DB.batch(SCHEMA.map((sql) => env.DB.prepare(sql)));
+  // Colonne e-mail ajoutée après coup : les bases déjà créées n'en ont pas.
+  const { results } = await env.DB.prepare('PRAGMA table_info(users)').all();
+  if (!results.some((c) => c.name === 'email')) {
+    // Deux instances peuvent lancer la migration en même temps : la seconde trouve la colonne déjà là.
+    try { await env.DB.prepare('ALTER TABLE users ADD COLUMN email TEXT').run(); }
+    catch (e) { if (!String(e && e.message).includes('duplicate column')) throw e; }
+  }
+  await env.DB.prepare('CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email) WHERE email IS NOT NULL').run();
+}
 function ensureSchema(env) {
   // Crée les tables au premier appel (sans effet si elles existent déjà).
-  if (!schemaReady) {
-    schemaReady = env.DB.batch(SCHEMA.map((sql) => env.DB.prepare(sql))).catch((e) => { schemaReady = null; throw e; });
-  }
+  if (!schemaReady) schemaReady = migrate(env).catch((e) => { schemaReady = null; throw e; });
   return schemaReady;
 }
 
@@ -142,9 +156,9 @@ async function currentUser(env, request) {
   if (!token) return null;
   const tokenHash = await sha256(token);
   const row = await env.DB.prepare(
-    'SELECT u.id AS id, u.username AS username FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?'
+    'SELECT u.id AS id, u.username AS username, u.email AS email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?'
   ).bind(tokenHash, Math.floor(Date.now() / 1000)).first();
-  return row ? { id: row.id, username: row.username, tokenHash } : null;
+  return row ? { id: row.id, username: row.username, email: row.email, tokenHash } : null;
 }
 
 async function requireUser(env, request) {
@@ -165,6 +179,13 @@ function checkPassword(password) {
     throw new HttpError(400, 'Le mot de passe doit contenir entre 8 et 200 caractères.');
   }
 }
+function cleanEmail(raw) {
+  const email = String(raw || '').trim().toLowerCase();
+  if (!email) throw new HttpError(400, 'Saisis ton adresse e-mail : elle sert à récupérer ton mot de passe.');
+  if (email.length > 254 || !EMAIL_RE.test(email)) throw new HttpError(400, 'Adresse e-mail invalide.');
+  return email;
+}
+const isUniqueError = (e, col) => String(e && e.message).includes('UNIQUE') && String(e && e.message).includes(col);
 
 async function register(env, request) {
   const body = await readJson(request);
@@ -177,18 +198,20 @@ async function register(env, request) {
     throw new HttpError(403, 'Code d’invitation incorrect.');
   }
   checkCredentials(username, password);
+  const email = cleanEmail(body.email);
   const id = randomToken(12);
   const salt = b64u(crypto.getRandomValues(new Uint8Array(16)));
   const hash = await hashPassword(password, salt, PBKDF2_ITER);
   try {
-    await env.DB.prepare('INSERT INTO users (id, username, pw_hash, pw_salt, pw_iter, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(id, username, hash, salt, PBKDF2_ITER, new Date().toISOString()).run();
+    await env.DB.prepare('INSERT INTO users (id, username, email, pw_hash, pw_salt, pw_iter, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, username, email, hash, salt, PBKDF2_ITER, new Date().toISOString()).run();
   } catch (e) {
+    if (isUniqueError(e, 'email')) throw new HttpError(409, 'Cette adresse e-mail est déjà utilisée par un autre compte.');
     if (String(e && e.message).includes('UNIQUE')) throw new HttpError(409, 'Cet identifiant est déjà pris.');
     throw e;
   }
   const cookie = await startSession(env, request, id);
-  return json({ user: publicUser(env, username) }, 201, { 'Set-Cookie': cookie });
+  return json({ user: publicUser(env, username, email) }, 201, { 'Set-Cookie': cookie });
 }
 
 async function login(env, request) {
@@ -200,7 +223,7 @@ async function login(env, request) {
     throw new HttpError(429, 'Trop d’essais. Réessaie dans quelques minutes.');
   }
   const row = USER_RE.test(username)
-    ? await env.DB.prepare('SELECT id, pw_hash, pw_salt, pw_iter FROM users WHERE username = ?').bind(username).first()
+    ? await env.DB.prepare('SELECT id, email, pw_hash, pw_salt, pw_iter FROM users WHERE username = ?').bind(username).first()
     : null;
   // Même durée de calcul que l'identifiant existe ou non.
   const salt = row ? row.pw_salt : 'AAAAAAAAAAAAAAAAAAAAAA';
@@ -211,7 +234,7 @@ async function login(env, request) {
   }
   await env.DB.prepare('DELETE FROM attempts WHERE key = ?').bind(kUser).run();
   const cookie = await startSession(env, request, row.id);
-  return json({ user: publicUser(env, username) }, 200, { 'Set-Cookie': cookie });
+  return json({ user: publicUser(env, username, row.email) }, 200, { 'Set-Cookie': cookie });
 }
 
 async function logout(env, request) {
@@ -242,8 +265,111 @@ async function changePassword(env, request) {
     env.DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ?, pw_iter = ? WHERE id = ?').bind(hash, salt, PBKDF2_ITER, user.id),
     // les autres appareils doivent se reconnecter
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash != ?').bind(user.id, user.tokenHash),
+    env.DB.prepare('DELETE FROM password_resets WHERE user_id = ?').bind(user.id),
   ]);
   return json({ ok: true });
+}
+
+async function changeEmail(env, request) {
+  const user = await requireUser(env, request);
+  const body = await readJson(request);
+  if (await tooMany(env, 'pw:' + user.id, 8, 900)) throw new HttpError(429, 'Trop d’essais. Réessaie dans quelques minutes.');
+  if (!(await verifyPassword(env, user.id, body.password))) {
+    await noteAttempt(env, 'pw:' + user.id);
+    throw new HttpError(403, 'Le mot de passe est incorrect.');
+  }
+  const email = cleanEmail(body.email);
+  try {
+    await env.DB.batch([
+      env.DB.prepare('UPDATE users SET email = ? WHERE id = ?').bind(email, user.id),
+      // un lien envoyé à l'ancienne adresse ne doit plus servir
+      env.DB.prepare('DELETE FROM password_resets WHERE user_id = ?').bind(user.id),
+    ]);
+  } catch (e) {
+    if (isUniqueError(e, 'email')) throw new HttpError(409, 'Cette adresse e-mail est déjà utilisée par un autre compte.');
+    throw e;
+  }
+  return json({ user: publicUser(env, user.username, email) });
+}
+
+/* ---------- mot de passe oublié ---------- */
+const mailReady = (env) => !!(env.EMAIL && env.MAIL_FROM);
+
+function resetMail(username, link) {
+  const text = `Bonjour ${username},
+
+Quelqu'un (sans doute toi) a demandé à changer le mot de passe de ton Carnet de dégustation.
+Pour choisir un nouveau mot de passe, ouvre ce lien dans l'heure qui vient :
+
+${link}
+
+Si tu n'as rien demandé, ignore ce message : ton mot de passe reste le même.`;
+  const html = `<p>Bonjour ${username},</p>
+<p>Quelqu'un (sans doute toi) a demandé à changer le mot de passe de ton Carnet de dégustation.</p>
+<p><a href="${link}">Choisir un nouveau mot de passe</a></p>
+<p>Le lien est valable une heure et ne sert qu'une fois. Si tu n'as rien demandé, ignore ce message : ton mot de passe reste le même.</p>`;
+  return { subject: 'Ton mot de passe du Carnet de dégustation', text, html };
+}
+
+async function forgotPassword(env, request, ctx) {
+  if (!mailReady(env)) {
+    throw new HttpError(503, 'La récupération par e-mail n’est pas encore configurée : demande à la personne qui gère le site.');
+  }
+  const body = await readJson(request);
+  const login = String(body.login || '').trim().toLowerCase().slice(0, 254);
+  if (!login) throw new HttpError(400, 'Saisis ton identifiant ou ton adresse e-mail.');
+  const kIp = 'fp:' + clientIp(request);
+  if (await tooMany(env, kIp, 10, 3600)) throw new HttpError(429, 'Trop de demandes. Réessaie plus tard.');
+  await noteAttempt(env, kIp);
+  // Même réponse que le compte existe ou non, et l'e-mail part en arrière-plan.
+  const done = json({ ok: true });
+  const row = await env.DB.prepare('SELECT id, username, email FROM users WHERE username = ? OR email = ?').bind(login, login).first();
+  if (!row || !row.email) return done;
+  const kUser = 'fpu:' + row.id;
+  if (await tooMany(env, kUser, 3, 3600)) return done;
+  await noteAttempt(env, kUser);
+  const token = randomToken(32);
+  const now = Math.floor(Date.now() / 1000);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM password_resets WHERE user_id = ? OR expires_at < ?').bind(row.id, now),
+    env.DB.prepare('INSERT INTO password_resets (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
+      .bind(await sha256(token), row.id, now + RESET_MINUTES * 60, now),
+  ]);
+  // Le jeton est dans le fragment (#) : il n'apparaît ni dans les journaux du serveur ni dans l'en-tête Referer.
+  const link = new URL(request.url).origin + '/#reset=' + token;
+  const mail = resetMail(row.username, link);
+  const send = env.EMAIL.send({ to: row.email, from: { email: env.MAIL_FROM, name: 'Carnet de dégustation' }, ...mail })
+    .catch((e) => console.error('Envoi de l’e-mail impossible :', e && e.code, e && e.message));
+  if (ctx) ctx.waitUntil(send); else await send;
+  return done;
+}
+
+async function resetPassword(env, request) {
+  const body = await readJson(request);
+  const kIp = 'rp:' + clientIp(request);
+  if (await tooMany(env, kIp, 20, 3600)) throw new HttpError(429, 'Trop d’essais. Réessaie plus tard.');
+  const token = typeof body.token === 'string' ? body.token.slice(0, 100) : '';
+  const now = Math.floor(Date.now() / 1000);
+  const row = token
+    ? await env.DB.prepare(
+      'SELECT r.user_id AS id, u.username AS username, u.email AS email FROM password_resets r JOIN users u ON u.id = r.user_id WHERE r.token_hash = ? AND r.expires_at > ?'
+    ).bind(await sha256(token), now).first()
+    : null;
+  if (!row) {
+    await noteAttempt(env, kIp);
+    throw new HttpError(400, 'Ce lien n’est plus valable (il a déjà servi ou il a expiré). Demande-en un nouveau.');
+  }
+  checkPassword(body.password);
+  const salt = b64u(crypto.getRandomValues(new Uint8Array(16)));
+  const hash = await hashPassword(body.password, salt, PBKDF2_ITER);
+  await env.DB.batch([
+    env.DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ?, pw_iter = ? WHERE id = ?').bind(hash, salt, PBKDF2_ITER, row.id),
+    env.DB.prepare('DELETE FROM password_resets WHERE user_id = ?').bind(row.id),
+    env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(row.id),
+    env.DB.prepare('DELETE FROM attempts WHERE key = ?').bind('u:' + row.username),
+  ]);
+  const cookie = await startSession(env, request, row.id);
+  return json({ user: publicUser(env, row.username, row.email) }, 200, { 'Set-Cookie': cookie });
 }
 
 async function deleteAccount(env, request) {
@@ -257,6 +383,7 @@ async function deleteAccount(env, request) {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM entries WHERE user_id = ?').bind(user.id),
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(user.id),
+    env.DB.prepare('DELETE FROM password_resets WHERE user_id = ?').bind(user.id),
     env.DB.prepare('DELETE FROM users WHERE id = ?').bind(user.id),
   ]);
   const secure = new URL(request.url).protocol === 'https:';
@@ -362,7 +489,7 @@ function checkOrigin(request) {
   if (origin && origin !== new URL(request.url).origin) throw new HttpError(403, 'Requête refusée.');
 }
 
-async function route(request, env) {
+async function route(request, env, ctx) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/+$/, '');
   const method = request.method;
@@ -372,7 +499,7 @@ async function route(request, env) {
   if (path === '/api/me') {
     if (method === 'GET') {
       const user = await requireUser(env, request);
-      return json({ user: publicUser(env, user.username) });
+      return json({ user: publicUser(env, user.username, user.email) });
     }
     if (method === 'DELETE') return deleteAccount(env, request);
   }
@@ -380,6 +507,9 @@ async function route(request, env) {
   if (path === '/api/login' && method === 'POST') return login(env, request);
   if (path === '/api/logout' && method === 'POST') return logout(env, request);
   if (path === '/api/password' && method === 'POST') return changePassword(env, request);
+  if (path === '/api/email' && method === 'POST') return changeEmail(env, request);
+  if (path === '/api/forgot' && method === 'POST') return forgotPassword(env, request, ctx);
+  if (path === '/api/reset' && method === 'POST') return resetPassword(env, request);
   if (path === '/api/journal') {
     if (method === 'GET') return listEntries(env, request);
     if (method === 'POST') return bulkEntries(env, request);
@@ -393,11 +523,11 @@ async function route(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     try {
-      return await route(request, env);
+      return await route(request, env, ctx);
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.message, ...(e.extra || {}) }, e.status);
       console.error('Erreur serveur :', e && e.stack ? e.stack : e);

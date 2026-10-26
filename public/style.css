@@ -193,6 +193,10 @@ label.btn{display:inline-flex;align-items:center}
 .auth-card .opt{text-align:center}
 .auth-card form{display:grid;gap:14px}
 .auth-note{font-size:13px;color:var(--muted)}
+.auth-card .linkbtn{justify-self:center}
+.linkbtn{background:none;border:0;padding:4px 2px;font:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.linkbtn:hover{color:var(--ink)}
+.ok{font-size:13px;color:var(--ink);background:var(--accent-soft);border-radius:10px;padding:10px 12px}
 .acct{max-width:560px}
 .acct form{display:grid;gap:14px}
 .cright{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
