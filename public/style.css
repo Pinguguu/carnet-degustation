@@ -316,3 +316,40 @@ input,select,textarea{border-radius:14px!important}
 .d-photo{display:block;width:180px;max-width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:16px;border:1px solid var(--line)}
 .lbox{position:fixed;inset:0;z-index:60;background:rgba(10,5,12,.86);display:grid;place-items:center;padding:24px;cursor:zoom-out}
 .lbox img{max-width:100%;max-height:100%;border-radius:12px}
+
+/* téléphone : en-tête compact (titre et Vins / Spiritueux sur une ligne, les cinq onglets visibles),
+   barre d'outils du journal resserrée, cartes à leur hauteur naturelle */
+@media (max-width:640px){
+  .top .wrap{padding-top:10px;padding-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:10px}
+  .top h1{font-size:clamp(16px,4.8vw,22px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top .sub{display:none}
+  .modesw{margin-top:0;grid-column:2;grid-row:1}
+  .modesw .opt{min-height:32px;padding:4px 9px;font-size:12.5px}
+  .tabs{grid-column:1/-1;display:flex;width:100%;margin-top:8px}
+  .tab{flex:1 1 auto;padding:8px 4px;font-size:14px;text-align:center}
+  .tab .n{margin-left:2px}
+  .lede{font-size:14px;margin-bottom:14px}
+  .tools{gap:8px}
+  .tools .inp{max-width:none;flex:1 1 100%}
+  #jtype .opt,#jfav{min-height:36px;padding:5px 11px}
+  .tools .count{margin-left:auto}
+  .tools .btn.sm{flex:1 1 calc(50% - 4px);justify-content:center;text-align:center;white-space:nowrap;padding-inline:8px;font-size:13px}
+  .store{display:none}
+  .grid{grid-auto-rows:auto}
+  .kv{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+}
+/* écran tactile : boutons photo empilés, de même largeur */
+@media (pointer:coarse){.ph-acts .btn{flex:1 1 100%;justify-content:center;white-space:nowrap}}
+/* menu photo en bas de l'écran (façon iPhone) */
+.sheet{position:fixed;inset:0;z-index:60;background:rgba(10,5,12,.45);display:flex;align-items:flex-end;justify-content:center;
+  padding:12px max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.sheet-p{width:min(100%,440px);display:grid;gap:8px}
+.sheet-g{background:var(--surface);border-radius:18px;overflow:hidden;display:grid}
+.sheet-t{font-size:13px;color:var(--muted);text-align:center;padding:12px 16px 10px}
+.sheet-o{display:block;width:100%;background:var(--surface);border:0;border-top:1px solid var(--line);padding:15px 16px;text-align:center;
+  font-size:17px;font-weight:500;color:var(--accent);cursor:pointer}
+.sheet-o:active{background:var(--surface2)}
+.sheet-x{border:0;border-radius:18px;font-weight:700}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:sheet-f .15s ease-out}.sheet-p{animation:sheet-u .2s ease-out}}
+@keyframes sheet-f{from{background:rgba(10,5,12,0)}}
+@keyframes sheet-u{from{transform:translateY(24px);opacity:0}}
