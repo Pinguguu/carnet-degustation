@@ -1,6 +1,6 @@
 # Carnet de dégustation (WSET SAT)
 
-Site de dégustation avec comptes (identifiant, e-mail et mot de passe, récupération du mot de passe par e-mail) : fiche en quatre étapes selon l'approche systématique du WSET, journal privé par personne, 33 cépages, fiche spiritueux (WSET) avec ses catégories, lexique d'arômes, export et import Excel, fiche PDF par vin.
+Site de dégustation avec comptes (identifiant, e-mail et mot de passe, récupération du mot de passe par e-mail), photo de l'étiquette : fiche en quatre étapes selon l'approche systématique du WSET, journal privé par personne, 33 cépages, fiche spiritueux (WSET) avec ses catégories, lexique d'arômes, export et import Excel, fiche PDF par vin.
 
 Hébergé sur **Cloudflare Workers** (le site et l'API) avec une base **D1** (SQLite). Pas de framework : du HTML, du CSS et du JavaScript simples.
 
@@ -54,7 +54,17 @@ Tant que `send_email` est en commentaire ou que `MAIL_FROM` est vide, le lien r�
 
 Les comptes créés avant l'arrivée des e-mails n'ont pas d'adresse : un message leur demande d'en ajouter une dans l'onglet **Compte**.
 
-### 5. Spiritueux
+### 5. Photos d'étiquette
+
+Chaque fiche (vin ou spiritueux) peut avoir une photo de l'étiquette : vignette dans le journal, photo en grand dans le détail, et dans la fiche PDF. Le site réduit la photo avant l'envoi (1 200 px, environ 150 à 300 Ko). Les photos sont rangées dans **Cloudflare R2** (offre gratuite : 10 Go).
+
+1. Cloudflare, **R2 Object Storage** : active R2 (Cloudflare peut demander un moyen de paiement, même pour l'offre gratuite).
+2. **Create bucket**, nom : `carnet-photos` (emplacement automatique, classe Standard). Ne le rends pas public : le site sert lui-même les photos, seulement à leur propriétaire.
+3. Dans `wrangler.jsonc`, retire les `//` devant la ligne `"r2_buckets": …`, puis enregistre sur GitHub (commit sur `main`). Ne le fais pas avant l'étape 2 : Cloudflare refuserait le déploiement.
+
+Tant que la ligne est en commentaire, le champ photo n'apparaît pas.
+
+### 6. Spiritueux
 
 Le site contient aussi la fiche spiritueux, ouverte à tous les comptes : un sélecteur **Vins / Spiritueux** apparaît sous le titre.
 
@@ -65,7 +75,7 @@ Pour la réserver à certains comptes (par exemple pendant des tests), ajoute da
 
 Supprime ce secret (ou mets `*`) pour rouvrir à tout le monde. Le serveur refuse les fiches spiritueux des autres comptes.
 
-### 6. Partager
+### 7. Partager
 
 Ouvre `https://carnet-degustation.<ton-sous-domaine>.workers.dev`, crée ton compte, puis envoie l'adresse et le code d'invitation à tes amis. Chacun a son journal, que les autres ne voient pas.
 
@@ -116,6 +126,7 @@ npx wrangler d1 execute carnet-degustation --local --command "SELECT username FR
 - Sessions : jeton aléatoire de 30 jours, seul son hachage est stocké ; cookie `HttpOnly`, `SameSite=Lax`, `Secure` en HTTPS. Le changement de mot de passe ferme les autres sessions.
 - Limitation des essais : 8 échecs par identifiant et par 15 minutes (30 par adresse IP), 20 créations de compte par heure et par adresse IP.
 - Récupération du mot de passe : jeton aléatoire valable une heure et à usage unique, seul son hachage est stocké. Le lien porte le jeton après `#`, donc il n'apparaît pas dans les journaux du serveur. La réponse est la même que le compte existe ou non. Au plus 3 e-mails par compte et 10 demandes par adresse IP, par heure. Une réinitialisation ferme toutes les sessions ; changer d'adresse ou de mot de passe annule les liens en cours.
+- Photos : rangées sous l'identifiant du compte, servies uniquement au compte connecté qui les a ajoutées ; JPEG uniquement, 1,5 Mo au plus. Supprimer une fiche ou un compte supprime ses photos.
 - Changer d'adresse e-mail demande le mot de passe. L'adresse n'est pas vérifiée à l'inscription : une adresse erronée empêche seulement la récupération.
 - Vérification de l'en-tête `Origin` sur les requêtes qui modifient des données.
 - Politique de sécurité du contenu (CSP) et autres en-têtes dans `public/_headers`.

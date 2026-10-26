@@ -12,11 +12,13 @@ const ID_RE = /^[A-Za-z0-9_-]{1,60}$/;
 const USER_RE = /^[a-z0-9][a-z0-9_.-]{2,23}$/;
 const EMAIL_RE = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]+$/;
 const RESET_MINUTES = 60; // durée de validité d'un lien de réinitialisation
+const MAX_PHOTO = 1500000; // octets ; le site réduit les photos avant l'envoi (environ 150 à 300 Ko)
+const PHOTO_RE = /^[A-Za-z0-9_-]{1,20}$/; // version de la photo, enregistrée dans la fiche
 
 // Champs d'une fiche de dégustation (identiques à ceux du site).
 const FIELD_KEYS = ['kind', 'aveugle', 'tex', 'fnat', 'exp', 'date', 'deg', 'nom', 'prod', 'app', 'cep', 'mil', 'prix', 'abv', 'type', 'eff', 'limp', 'icol', 'col',
   'aobs', 'cond', 'inez', 'anez', 'dev', 'suc', 'aci', 'tan', 'ttan', 'alc', 'corps', 'mousse', 'iboc', 'aboc', 'fin',
-  'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com', 'acc', 'fav'];
+  'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com', 'acc', 'fav', 'photo'];
 const LONG_KEYS = new Set(['tex', 'aobs', 'anez', 'aboc', 'bobs', 'jqual', 'com', 'acc']);
 
 /* Le mode « spiritueux » est ouvert à tous les comptes. Pour le réserver à certains comptes, définir SPIRITS_USERS
@@ -26,7 +28,7 @@ function spiritsAllowed(env, username) {
   if (!raw || raw === '*') return true;
   return raw.split(',').map((x) => x.trim()).filter(Boolean).includes(String(username || '').toLowerCase());
 }
-const publicUser = (env, username, email) => ({ username, email: email || null, spirits: spiritsAllowed(env, username) });
+const publicUser = (env, username, email) => ({ username, email: email || null, spirits: spiritsAllowed(env, username), photos: !!env.PHOTOS });
 
 class HttpError extends Error {
   constructor(status, message, extra) { super(message); this.status = status; this.extra = extra; }
@@ -380,6 +382,7 @@ async function deleteAccount(env, request) {
     await noteAttempt(env, 'pw:' + user.id);
     throw new HttpError(403, 'Le mot de passe est incorrect.');
   }
+  await deleteUserPhotos(env, user.id);
   await env.DB.batch([
     env.DB.prepare('DELETE FROM entries WHERE user_id = ?').bind(user.id),
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(user.id),
@@ -408,6 +411,7 @@ function cleanEntry(body, env, user) {
   else if (!spiritsAllowed(env, user.username)) throw new HttpError(403, 'Les spiritueux ne sont pas encore ouverts pour ce compte.');
   if (!Object.keys(out).length) throw new HttpError(400, 'La fiche est vide.');
   if (out.date && !/^\d{4}-\d{2}-\d{2}$/.test(out.date)) delete out.date;
+  if (out.photo && !PHOTO_RE.test(out.photo)) delete out.photo;
   return out;
 }
 
@@ -455,7 +459,84 @@ async function deleteEntry(env, request, rawId) {
   const id = decodeURIComponent(rawId);
   if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
   await env.DB.prepare('DELETE FROM entries WHERE user_id = ? AND id = ?').bind(user.id, id).run();
+  if (env.PHOTOS) await env.PHOTOS.delete(photoKey(user.id, id));
   return json({ ok: true });
+}
+
+/* ---------- photos d'étiquette (Cloudflare R2) ---------- */
+// Une photo par fiche, rangée sous « identifiant du compte / identifiant de la fiche » : un compte ne voit que ses photos.
+const photoKey = (userId, entryId) => userId + '/' + entryId + '.jpg';
+
+function requirePhotos(env) {
+  if (!env.PHOTOS) throw new HttpError(503, 'Les photos ne sont pas encore activées sur ce site.');
+}
+
+async function entryRow(env, userId, id) {
+  return env.DB.prepare('SELECT id, data, created_at, updated_at FROM entries WHERE user_id = ? AND id = ?').bind(userId, id).first();
+}
+
+async function setEntryPhoto(env, userId, row, version) {
+  let data = {};
+  try { data = JSON.parse(row.data); } catch (e) { /* fiche illisible : on repart de zéro */ }
+  if (version) data.photo = version; else delete data.photo;
+  const now = new Date().toISOString();
+  await env.DB.prepare('UPDATE entries SET data = ?, updated_at = ? WHERE user_id = ? AND id = ?')
+    .bind(JSON.stringify(data), now, userId, row.id).run();
+  return rowToEntry({ ...row, data: JSON.stringify(data), updated_at: now });
+}
+
+async function putPhoto(env, request, rawId) {
+  requirePhotos(env);
+  const user = await requireUser(env, request);
+  const id = decodeURIComponent(rawId);
+  if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
+  if (!(request.headers.get('Content-Type') || '').startsWith('image/jpeg')) throw new HttpError(415, 'La photo doit être au format JPEG.');
+  const row = await entryRow(env, user.id, id);
+  if (!row) throw new HttpError(404, 'Enregistre d’abord la fiche.');
+  const buf = await request.arrayBuffer();
+  if (buf.byteLength > MAX_PHOTO) throw new HttpError(413, 'Photo trop lourde.');
+  const b = new Uint8Array(buf, 0, Math.min(3, buf.byteLength));
+  if (b.length < 3 || b[0] !== 0xff || b[1] !== 0xd8 || b[2] !== 0xff) throw new HttpError(415, 'La photo doit être au format JPEG.');
+  await env.PHOTOS.put(photoKey(user.id, id), buf, { httpMetadata: { contentType: 'image/jpeg' } });
+  const entry = await setEntryPhoto(env, user.id, row, Date.now().toString(36));
+  return json({ entry });
+}
+
+async function getPhoto(env, request, rawId) {
+  requirePhotos(env);
+  const user = await requireUser(env, request);
+  const id = decodeURIComponent(rawId);
+  if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
+  const obj = await env.PHOTOS.get(photoKey(user.id, id));
+  if (!obj) throw new HttpError(404, 'Photo introuvable.');
+  return new Response(obj.body, {
+    headers: {
+      'Content-Type': 'image/jpeg',
+      // l'adresse change à chaque nouvelle photo (?v=…), le navigateur peut donc la garder longtemps
+      'Cache-Control': 'private, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
+}
+
+async function deletePhoto(env, request, rawId) {
+  requirePhotos(env);
+  const user = await requireUser(env, request);
+  const id = decodeURIComponent(rawId);
+  if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
+  await env.PHOTOS.delete(photoKey(user.id, id));
+  const row = await entryRow(env, user.id, id);
+  return json({ entry: row ? await setEntryPhoto(env, user.id, row, null) : null });
+}
+
+async function deleteUserPhotos(env, userId) {
+  if (!env.PHOTOS) return;
+  let cursor;
+  do {
+    const list = await env.PHOTOS.list({ prefix: userId + '/', cursor });
+    if (list.objects.length) await env.PHOTOS.delete(list.objects.map((o) => o.key));
+    cursor = list.truncated ? list.cursor : undefined;
+  } while (cursor);
 }
 
 async function bulkEntries(env, request) {
@@ -518,6 +599,12 @@ async function route(request, env, ctx) {
   if (m) {
     if (method === 'PUT') return putEntry(env, request, m[1]);
     if (method === 'DELETE') return deleteEntry(env, request, m[1]);
+  }
+  const mp = /^\/api\/photo\/([^/]+)$/.exec(path);
+  if (mp) {
+    if (method === 'GET') return getPhoto(env, request, mp[1]);
+    if (method === 'PUT') return putPhoto(env, request, mp[1]);
+    if (method === 'DELETE') return deletePhoto(env, request, mp[1]);
   }
   throw new HttpError(404, 'Introuvable.');
 }
