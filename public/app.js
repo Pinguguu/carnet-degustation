@@ -615,6 +615,7 @@ async function enterApp(user){
   me=user;
   $('#authwrap').hidden=true;$('#app').hidden=false;
   $('#acname').textContent=user.username;
+  $('#acnm').textContent=user.username;$('#acav').textContent=user.username.charAt(0).toUpperCase();
   showEmail();
   var ok=!!user.spirits;$('#modesw').hidden=!ok;
   var want=ok&&lsGet('carnet-mode')==='spi'?'spi':'vin';
@@ -1124,6 +1125,7 @@ function renderLexique(){
 function show(tab){
   document.querySelectorAll('.tab').forEach(function(t){t.setAttribute('aria-selected',t.dataset.tab===tab?'true':'false');});
   document.querySelectorAll('.view').forEach(function(v){v.hidden=v.id!=='v-'+tab;});
+  var ab=$('#acbtn');ab.classList.toggle('on',tab==='compte');if(tab==='compte')ab.setAttribute('aria-current','page');else ab.removeAttribute('aria-current');
   $('#bar').hidden=tab!=='fiche';
   try{history.replaceState(null,'','#'+tab);}catch(e){}
   if(tab!=='fiche')window.scrollTo(0,0);
@@ -1169,6 +1171,7 @@ function setMode(m){
 }
 buildForm();buildProfile();syncAll();renderLexique();applyTexts();
 document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){show(t.dataset.tab);});});
+$('#acbtn').addEventListener('click',function(){show('compte');});
 $('#m-vin').addEventListener('click',function(){setMode('vin');});
 $('#m-spi').addEventListener('click',function(){setMode('spi');});
 $('#bsave').addEventListener('click',saveEntry);

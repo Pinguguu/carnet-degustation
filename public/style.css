@@ -340,3 +340,17 @@ input,select,textarea{border-radius:14px!important}
 }
 /* écran tactile : boutons photo empilés, de même largeur */
 @media (pointer:coarse){.ph-acts .btn{flex:1 1 100%;justify-content:center;white-space:nowrap}}
+
+/* ordinateur : le compte passe en haut à droite (bouton avec initiale), l'onglet Compte reste sur téléphone */
+.acbtn{display:none}
+@media (min-width:641px){
+  .top .wrap{position:relative}
+  #t-compte{display:none}
+  .acbtn{display:inline-flex;align-items:center;gap:10px;position:absolute;top:14px;right:0;max-width:40%;
+    background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 14px 4px 4px;font-weight:600;font-size:14px}
+  .acbtn:hover{border-color:var(--accent)}
+  .acbtn.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .acav{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;
+    font-family:var(--f-display);font-style:italic;font-size:16px;flex:none}
+  .acnm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+}
