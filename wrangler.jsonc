@@ -19,9 +19,9 @@
       "database_id": "7fbc126f-a4d7-4559-be41-62c05586ac79"
     }
   ],
-  // Photos d'étiquette (Cloudflare R2, voir README.md). À décommenter une fois le bucket « carnet-photos » créé :
-  // sans lui, Cloudflare refuse le déploiement.
-  // "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "carnet-photos" }],
+  // Photos d'étiquette (Cloudflare R2, voir README.md). Le bucket « carnet-photos » doit exister,
+  // sinon Cloudflare refuse le déploiement.
+  "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "carnet-photos" }],
   // Envoi des e-mails de récupération de mot de passe (Cloudflare Email Service, voir README.md, étape 4).
   // À décommenter une fois le domaine ajouté dans Email Service : sans cela, Cloudflare refuse le déploiement.
   // "send_email": [{ "name": "EMAIL" }],
