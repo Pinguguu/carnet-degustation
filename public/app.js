@@ -283,7 +283,8 @@ function buildField(k){
 /* entry.photo : version de la photo déjà enregistrée ; pend : photo choisie ou retirée, envoyée à l'enregistrement de la fiche */
 var pend={blob:null,url:null,remove:false};
 var CAM='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.5"/></svg>';
-/* écran tactile (téléphone, tablette) : un bouton qui ouvre un menu (appareil photo ou galerie) ; ordinateur : le sélecteur de fichiers */
+/* un seul champ fichier, sans « capture » : le téléphone affiche son propre menu (photothèque, appareil photo, fichiers) ;
+   seul le libellé du bouton change entre écran tactile et ordinateur */
 var TOUCH=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
 function photoUrl(id,v){return '/api/photo/'+encodeURIComponent(id)+'?v='+encodeURIComponent(v);}
 function formPhotoUrl(){
@@ -306,12 +307,10 @@ function shrinkPhoto(file){
   });
 }
 function buildPhotoField(){
-  var cam=h('input',{type:'file',id:'phcam',accept:'image/*',capture:'environment',hidden:true});
   var gal=h('input',{type:'file',id:'phgal',accept:'image/*',hidden:true});
   var prev=h('img',{class:'ph-prev',alt:'Photo de l’étiquette',hidden:true,onclick:function(){zoomPhoto(prev.src);}});
   var icon=h('span',{class:'ph-icon','aria-hidden':'true'});icon.innerHTML=CAM;
-  var shoot=h('button',{class:'btn sm pri',type:'button',hidden:!TOUCH,'aria-haspopup':'dialog',onclick:function(){photoSheet(shoot);}},'Prendre une photo');
-  var pick=h('label',{class:'btn sm pri',for:'phgal',hidden:TOUCH},'Choisir une photo');
+  var pick=h('label',{class:'btn sm pri',for:'phgal'},TOUCH?'Prendre une photo':'Choisir une photo');
   var del=h('button',{class:'btn sm',type:'button',hidden:true,onclick:function(){
     clearPend();if(editId&&entry.photo)pend.remove=true;paintPhoto();renderSummary();}},'Retirer');
   async function picked(input){
@@ -321,11 +320,10 @@ function buildPhotoField(){
     clearPend();pend.blob=b;pend.url=URL.createObjectURL(b);
     paintPhoto();renderSummary();
   }
-  cam.addEventListener('change',function(){picked(cam);});
   gal.addEventListener('change',function(){picked(gal);});
-  els.photo={wrap:null,prev:prev,icon:icon,shoot:shoot,pick:pick,del:del};
+  els.photo={wrap:null,prev:prev,icon:icon,pick:pick,del:del};
   var w=h('div',{class:'field wide',id:'phfield'},h('span',{class:'lab'},'Photo de l’étiquette'),
-    h('div',{class:'ph-drop'},icon,prev,h('div',{class:'ph-txt'},h('div',{class:'ph-acts'},shoot,pick,del)),cam,gal));
+    h('div',{class:'ph-drop'},icon,prev,h('div',{class:'ph-txt'},h('div',{class:'ph-acts'},pick,del)),gal));
   els.photo.wrap=w;
   return w;
 }
@@ -335,24 +333,7 @@ function paintPhoto(){
   var url=formPhotoUrl();
   p.prev.hidden=!url;p.icon.hidden=!!url;p.del.hidden=!url;
   if(url&&p.prev.getAttribute('src')!==url)p.prev.src=url;
-  if(TOUCH)p.shoot.textContent=url?'Changer la photo':'Prendre une photo';
-  else p.pick.textContent=url?'Changer la photo':'Choisir une photo';
-}
-/* menu en bas de l'écran, comme sur iPhone : chaque choix est une étiquette reliée au champ fichier correspondant */
-function photoSheet(back){
-  var box,panel;
-  function close(){document.removeEventListener('keydown',key);box.remove();if(back&&back.focus)back.focus();}
-  function key(ev){if(ev.key==='Escape')close();}
-  function choice(id,label){return h('label',{class:'sheet-o',for:id,tabindex:'0',onclick:function(){setTimeout(close,0);},
-    onkeydown:function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();$('#'+id).click();close();}}},label);}
-  panel=h('div',{class:'sheet-p'},
-    h('div',{class:'sheet-g'},h('p',{class:'sheet-t'},'Photo de l’étiquette'),choice('phcam','Prendre une photo'),choice('phgal','Choisir dans la galerie')),
-    h('button',{class:'sheet-o sheet-x',type:'button',onclick:close},'Annuler'));
-  box=h('div',{class:'sheet',role:'dialog','aria-modal':'true','aria-label':'Ajouter une photo de l’étiquette',
-    onclick:function(ev){if(ev.target===box)close();}},panel);
-  document.addEventListener('keydown',key);
-  document.body.append(box);
-  panel.querySelector('.sheet-o').focus();
+  p.pick.textContent=url?'Changer la photo':(TOUCH?'Prendre une photo':'Choisir une photo');
 }
 function paintDot(dot,color,url){
   dot.style.background=color||'';
