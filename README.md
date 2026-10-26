@@ -47,10 +47,10 @@ Prérequis :
 Étapes :
 
 1. Dans Cloudflare, **Email Service**, **Email Sending** : ajoute ton domaine et laisse Cloudflare créer les enregistrements DNS (SPF, DKIM).
-2. Dans `wrangler.jsonc`, mets l'adresse d'expédition dans `MAIL_FROM` (par exemple `"carnet@mondomaine.fr"`), puis enregistre sur GitHub (commit sur `main`).
+2. Dans `wrangler.jsonc` : retire les `//` devant la ligne `"send_email": [{ "name": "EMAIL" }],` et mets l'adresse d'expédition dans `MAIL_FROM` (par exemple `"carnet@mondomaine.fr"`), puis enregistre sur GitHub (commit sur `main`). Ne décommente pas la ligne `send_email` avant l'étape 1 : Cloudflare refuserait le déploiement.
 3. Teste depuis l'écran de connexion avec ton propre compte. En cas de souci, les erreurs d'envoi apparaissent dans les journaux du Worker (**Observability**).
 
-Tant que `MAIL_FROM` est vide, le lien répond que la récupération n'est pas configurée et l'outil manuel ci-dessous reste disponible.
+Tant que `send_email` est en commentaire ou que `MAIL_FROM` est vide, le lien répond que la récupération n'est pas configurée et l'outil manuel ci-dessous reste disponible.
 
 Les comptes créés avant l'arrivée des e-mails n'ont pas d'adresse : un message leur demande d'en ajouter une dans l'onglet **Compte**.
 
