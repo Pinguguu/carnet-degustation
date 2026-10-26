@@ -283,7 +283,9 @@ function buildField(k){
 /* entry.photo : version de la photo déjà enregistrée ; pend : photo choisie ou retirée, envoyée à l'enregistrement de la fiche */
 var pend={blob:null,url:null,remove:false};
 var CAM='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.5"/></svg>';
-var PH_HINT='Sur téléphone, l’appareil photo s’ouvre directement. L’image est réduite avant l’envoi.';
+/* écran tactile (téléphone, tablette) : deux boutons, appareil photo ou galerie ; ordinateur : un seul bouton */
+var TOUCH=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+var PH_HINT=TOUCH?'Prends l’étiquette en photo sur le moment ou choisis une photo de ta galerie. L’image est réduite avant l’envoi.':'L’image est réduite avant l’envoi.';
 function photoUrl(id,v){return '/api/photo/'+encodeURIComponent(id)+'?v='+encodeURIComponent(v);}
 function formPhotoUrl(){
   if(pend.url)return pend.url;
@@ -305,24 +307,28 @@ function shrinkPhoto(file){
   });
 }
 function buildPhotoField(){
-  var file=h('input',{type:'file',id:'phfile',accept:'image/*',capture:'environment',hidden:true});
+  var cam=h('input',{type:'file',id:'phcam',accept:'image/*',capture:'environment',hidden:true});
+  var gal=h('input',{type:'file',id:'phgal',accept:'image/*',hidden:true});
   var prev=h('img',{class:'ph-prev',alt:'Photo de l’étiquette',hidden:true,onclick:function(){zoomPhoto(prev.src);}});
   var icon=h('span',{class:'ph-icon','aria-hidden':'true'});icon.innerHTML=CAM;
-  var pick=h('label',{class:'btn sm pri',for:'phfile'},'Prendre ou choisir une photo');
+  var shoot=h('label',{class:'btn sm pri',for:'phcam',hidden:!TOUCH},'Prendre une photo');
+  var pick=h('label',{class:TOUCH?'btn sm':'btn sm pri',for:'phgal'},TOUCH?'Depuis la galerie':'Choisir une photo');
   var del=h('button',{class:'btn sm',type:'button',hidden:true,onclick:function(){
     clearPend();if(editId&&entry.photo)pend.remove=true;paintPhoto();renderSummary();}},'Retirer');
   var hint=h('p',{class:'hint'},PH_HINT);
-  file.addEventListener('change',async function(){
-    var f=file.files&&file.files[0];file.value='';if(!f)return;
+  async function picked(input){
+    var f=input.files&&input.files[0];input.value='';if(!f)return;
     try{var b=await shrinkPhoto(f);}
     catch(e){toast('Cette photo n’a pas pu être lue. Essaie avec une photo en JPEG ou en PNG.');return;}
     clearPend();pend.blob=b;pend.url=URL.createObjectURL(b);
     paintPhoto();renderSummary();
     hint.textContent='Photo prête ('+Math.max(1,Math.round(b.size/1024))+' Ko). Elle sera envoyée à l’enregistrement de la fiche.';
-  });
-  els.photo={wrap:null,prev:prev,icon:icon,pick:pick,del:del,hint:hint};
+  }
+  cam.addEventListener('change',function(){picked(cam);});
+  gal.addEventListener('change',function(){picked(gal);});
+  els.photo={wrap:null,prev:prev,icon:icon,shoot:shoot,pick:pick,del:del,hint:hint};
   var w=h('div',{class:'field wide',id:'phfield'},h('span',{class:'lab'},'Photo de l’étiquette'),
-    h('div',{class:'ph-drop'},icon,prev,h('div',{class:'ph-txt'},h('div',{class:'ph-acts'},pick,del),hint),file));
+    h('div',{class:'ph-drop'},icon,prev,h('div',{class:'ph-txt'},h('div',{class:'ph-acts'},shoot,pick,del),hint),cam,gal));
   els.photo.wrap=w;
   return w;
 }
@@ -332,7 +338,8 @@ function paintPhoto(){
   var url=formPhotoUrl();
   p.prev.hidden=!url;p.icon.hidden=!!url;p.del.hidden=!url;
   if(url&&p.prev.getAttribute('src')!==url)p.prev.src=url;
-  p.pick.textContent=url?'Changer la photo':'Prendre ou choisir une photo';
+  if(TOUCH)p.shoot.textContent=url?'Reprendre une photo':'Prendre une photo';
+  else p.pick.textContent=url?'Changer la photo':'Choisir une photo';
   if(!pend.blob)p.hint.textContent=pend.remove?'La photo sera retirée à l’enregistrement de la fiche.':PH_HINT;
 }
 function paintDot(dot,color,url){
