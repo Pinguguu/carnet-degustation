@@ -302,3 +302,17 @@ input,select,textarea{border-radius:14px!important}
 .entry .detail{grid-column:1/-1}
 @media (max-width:640px){.entry .favb{top:auto}}
 .entry .favb{background:transparent}.entry:has(.rh:hover) .favb,.entry .favb:hover{background:var(--surface2)}
+/* photo de l'étiquette */
+.ph-drop{display:flex;align-items:center;gap:16px;border:1.5px dashed var(--line);border-radius:18px;padding:14px;background:var(--surface2)}
+.ph-icon{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);color:var(--accent);flex:none}
+.ph-txt{display:grid;gap:8px;min-width:0}
+.ph-acts{display:flex;gap:8px;flex-wrap:wrap}
+.ph-prev{width:96px;height:128px;object-fit:cover;border-radius:12px;border:1px solid var(--line);flex:none;cursor:zoom-in}
+.dot.ph,.p-dot.ph{background-size:cover;background-position:center;background-repeat:no-repeat}
+.dot.ph{width:44px;height:44px;border-radius:12px}
+.d-top{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.d-top>div{flex:1 1 260px;min-width:0}
+.d-zoom{padding:0;border:0;background:none;border-radius:16px;cursor:zoom-in;flex:none;max-width:100%}
+.d-photo{display:block;width:180px;max-width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:16px;border:1px solid var(--line)}
+.lbox{position:fixed;inset:0;z-index:60;background:rgba(10,5,12,.86);display:grid;place-items:center;padding:24px;cursor:zoom-out}
+.lbox img{max-width:100%;max-height:100%;border-radius:12px}

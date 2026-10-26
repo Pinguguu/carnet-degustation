@@ -36,7 +36,7 @@ var F={
   mat:{l:'Niveau de maturité',kind:'seg',s:'mat',wide:1}, com:{l:'Commentaire libre',kind:'area',wide:1}
 };
 var SECTIONS=[
-  {t:'Le vin',keys:['date','blind','nom','prod','app','cep','mil','prix','abv','type','eff']},
+  {t:'Le vin',keys:['date','blind','nom','prod','app','cep','mil','prix','abv','type','eff','photo']},
   {n:1,t:'Apparence',keys:['limp','icol','col','aobs']},
   {n:2,t:'Nez',keys:['cond','inez','dev','anez']},
   {n:3,t:'Bouche',keys:['suc','aci','tan','ttan','alc','corps','mousse','iboc','fin','aboc','bobs']},
@@ -116,7 +116,7 @@ var F={
   qual:{l:'Niveau de qualité',kind:'seg',s:'qual',wide:1}, jqual:{l:'Justification de la qualité',kind:'area',wide:1}, com:{l:'Commentaire libre',kind:'area',wide:1}
 };
 var SECTIONS=[
-  {t:'Le spiritueux',keys:['date','blind','nom','prod','app','cep','mil','prix','abv','type']},
+  {t:'Le spiritueux',keys:['date','blind','nom','prod','app','cep','mil','prix','abv','type','photo']},
   {n:1,t:'Apparence',keys:['limp','icol','col','aobs']},
   {n:2,t:'Nez',keys:['cond','inez','anez']},
   {n:3,t:'Bouche',keys:['suc','tex','iboc','aboc','fin','fnat']},
@@ -237,6 +237,7 @@ function buildField(k){
       onclick:function(){blindOn=!blindOn;paintBlind();}},'À l\'aveugle : désactivé');
     bw.append(h('span',{class:'lab'},'Dégustation'),bb,h('p',{class:'hint',id:'blindhint',hidden:true},'Cette fiche restera marquée « à l\'aveugle » dans le journal, même une fois nommée. Désactive le bouton pour retirer la mention.'));return bw;
   }
+  if(k==='photo')return buildPhotoField();
   var f=F[k],w=h('div',{class:'field'+(f.wide?' wide':'')}),c;
   if(f.kind==='text'||f.kind==='date'){
     c=h('input',{class:'inp',id:'f-'+k,type:f.kind==='date'?'date':'text',placeholder:f.ph||null,inputmode:f.mode||null,autocomplete:'off',
@@ -278,6 +279,88 @@ function buildField(k){
   }
   return w;
 }
+/* ---------- photo de l'étiquette ---------- */
+/* entry.photo : version de la photo déjà enregistrée ; pend : photo choisie ou retirée, envoyée à l'enregistrement de la fiche */
+var pend={blob:null,url:null,remove:false};
+var CAM='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+var PH_HINT='Sur téléphone, l’appareil photo s’ouvre directement. L’image est réduite avant l’envoi.';
+function photoUrl(id,v){return '/api/photo/'+encodeURIComponent(id)+'?v='+encodeURIComponent(v);}
+function formPhotoUrl(){
+  if(pend.url)return pend.url;
+  if(!pend.remove&&editId&&entry.photo)return photoUrl(editId,entry.photo);
+  return null;
+}
+function clearPend(){if(pend.url)URL.revokeObjectURL(pend.url);pend={blob:null,url:null,remove:false};}
+function shrinkPhoto(file){
+  return new Promise(function(ok,ko){
+    var u=URL.createObjectURL(file),img=new Image();
+    img.onload=function(){
+      var s=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);
+      c.toBlob(function(b){b?ok(b):ko(new Error('conversion'));},'image/jpeg',0.82);
+    };
+    img.onerror=function(){URL.revokeObjectURL(u);ko(new Error('format'));};
+    img.src=u;
+  });
+}
+function buildPhotoField(){
+  var file=h('input',{type:'file',id:'phfile',accept:'image/*',capture:'environment',hidden:true});
+  var prev=h('img',{class:'ph-prev',alt:'Photo de l’étiquette',hidden:true,onclick:function(){zoomPhoto(prev.src);}});
+  var icon=h('span',{class:'ph-icon','aria-hidden':'true'});icon.innerHTML=CAM;
+  var pick=h('label',{class:'btn sm pri',for:'phfile'},'Prendre ou choisir une photo');
+  var del=h('button',{class:'btn sm',type:'button',hidden:true,onclick:function(){
+    clearPend();if(editId&&entry.photo)pend.remove=true;paintPhoto();renderSummary();}},'Retirer');
+  var hint=h('p',{class:'hint'},PH_HINT);
+  file.addEventListener('change',async function(){
+    var f=file.files&&file.files[0];file.value='';if(!f)return;
+    try{var b=await shrinkPhoto(f);}
+    catch(e){toast('Cette photo n’a pas pu être lue. Essaie avec une photo en JPEG ou en PNG.');return;}
+    clearPend();pend.blob=b;pend.url=URL.createObjectURL(b);
+    paintPhoto();renderSummary();
+    hint.textContent='Photo prête ('+Math.max(1,Math.round(b.size/1024))+' Ko). Elle sera envoyée à l’enregistrement de la fiche.';
+  });
+  els.photo={wrap:null,prev:prev,icon:icon,pick:pick,del:del,hint:hint};
+  var w=h('div',{class:'field wide',id:'phfield'},h('span',{class:'lab'},'Photo de l’étiquette'),
+    h('div',{class:'ph-drop'},icon,prev,h('div',{class:'ph-txt'},h('div',{class:'ph-acts'},pick,del),hint),file));
+  els.photo.wrap=w;
+  return w;
+}
+function paintPhoto(){
+  var p=els.photo;if(!p)return;
+  p.wrap.hidden=!(me&&me.photos);
+  var url=formPhotoUrl();
+  p.prev.hidden=!url;p.icon.hidden=!!url;p.del.hidden=!url;
+  if(url&&p.prev.getAttribute('src')!==url)p.prev.src=url;
+  p.pick.textContent=url?'Changer la photo':'Prendre ou choisir une photo';
+  if(!pend.blob)p.hint.textContent=pend.remove?'La photo sera retirée à l’enregistrement de la fiche.':PH_HINT;
+}
+function paintDot(dot,color,url){
+  dot.style.background=color||'';
+  dot.classList.toggle('ph',!!url);
+  if(url)dot.style.backgroundImage='url("'+url+'")';
+}
+function zoomPhoto(src){
+  var back=document.activeElement,img=h('img',{src:src,alt:'Photo de l’étiquette'});
+  var box=h('div',{class:'lbox',role:'dialog','aria-modal':'true','aria-label':'Photo de l’étiquette',tabindex:'-1'},img);
+  function close(){document.removeEventListener('keydown',key);box.remove();if(back&&back.focus)back.focus();}
+  function key(ev){if(ev.key==='Escape')close();}
+  box.addEventListener('click',close);document.addEventListener('keydown',key);
+  document.body.append(box);box.focus();
+}
+async function sendPhoto(id){
+  if(pend.blob){
+    var res;
+    try{res=await fetch('/api/photo/'+encodeURIComponent(id),{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'image/jpeg'},body:pend.blob});}
+    catch(e){throw {message:'connexion impossible'};}
+    var data=null;try{data=await res.json();}catch(e){}
+    if(!res.ok)throw {message:(data&&data.error)||'erreur du serveur'};
+    return data.entry;
+  }
+  if(pend.remove)return (await api('DELETE','/api/photo/'+encodeURIComponent(id))).entry;
+  return null;
+}
+
 function buildForm(){
   var st=$('#fstack');st.textContent='';
   st.append(h('div',{class:'editbar',id:'editbar',hidden:true},
@@ -348,7 +431,7 @@ function renderColors(){
   });
 }
 function syncAll(){
-  FIELDKEYS.forEach(syncField);renderColors();renderSummary();updateBar();
+  FIELDKEYS.forEach(syncField);renderColors();paintPhoto();renderSummary();updateBar();
 }
 function gaugeFill(cells,idx){cells.forEach(function(c,i){c.classList.toggle('on',idx>=0&&i<=idx);});}
 function renderSummary(){
@@ -356,7 +439,7 @@ function renderSummary(){
   s.name.textContent=entry.nom||WD.nouveau;
   var meta=[entry.prod,entry.app,entry.mil].filter(Boolean).join(' · ');
   s.meta.textContent=meta||'Le profil se dessine au fil de la dégustation.';
-  s.dot.style.background=entry.col?HEX[entry.col]:(entry.type?TYPEHEX[entry.type]:'');
+  paintDot(s.dot,entry.col?HEX[entry.col]:(entry.type?TYPEHEX[entry.type]:''),formPhotoUrl());
   PROFILE.forEach(function(r){
     var k=r[0],row=s.rows[k],i=SCALE[F[k].s].indexOf(entry[k]);
     gaugeFill(row.cells,i);row.v.textContent=i>=0?entry[k]:'—';
@@ -390,7 +473,7 @@ function paintBlind(){
   $('#bsave').textContent=editId?WD.maj:(blindOn?'Enregistrer sans nom':'Enregistrer dans le journal');
 }
 function resetForm(){
-  blindOn=false;entry=blank(true);editId=null;editMeta=null;var k=draftKey();if(k)lsDel(k);syncAll();
+  blindOn=false;entry=blank(true);editId=null;editMeta=null;clearPend();var k=draftKey();if(k)lsDel(k);syncAll();
 }
 
 /* ---------- API, compte et journal ---------- */
@@ -612,13 +695,19 @@ async function saveEntry(){
   FIELDKEYS.forEach(function(k){if(entry[k])o[k]=entry[k];});
   if(mode==='spi')o.kind='spi';
   if(keepFav)o.fav='Oui';
+  if(editId&&entry.photo&&!pend.remove)o.photo=entry.photo;
   o.id=editId||newId();o.createdAt=(editMeta&&editMeta.createdAt)||now;o.updatedAt=now;
   var btn=$('#bsave'),btn2=$('#bblind');btn.disabled=true;btn2.disabled=true;
   try{
     await store.save(o);
-    var wasEdit=!!editId,name=entry.nom||'Dégustation à l\'aveugle';
+    var wasEdit=!!editId,name=entry.nom||'Dégustation à l\'aveugle',phErr=null;
+    if(pend.blob||pend.remove){
+      try{var pe=await sendPhoto(o.id);if(pe){upsertLocal([pe]);renderJournal();}}
+      catch(err){phErr=(err&&err.message)||'réessaie';}
+    }
     resetForm();
-    toast(wasEdit?'« '+name+' » mis à jour':'« '+name+' » ajouté au journal','Voir le journal',function(){show('journal');});
+    if(phErr)toast('« '+name+' » enregistré, mais la photo n’a pas pu être envoyée ('+phErr+'). Ouvre la fiche dans le journal pour la remettre.');
+    else toast(wasEdit?'« '+name+' » mis à jour':'« '+name+' » ajouté au journal','Voir le journal',function(){show('journal');});
   }catch(e){
     console.warn(e);toast('Enregistrement impossible : '+((e&&e.message)||'réessaie dans un instant.'));
   }finally{btn.disabled=false;btn2.disabled=false;}
@@ -669,12 +758,17 @@ function renderJournal(){
   if(!rows.length){list.append(jfilter.fav&&!nf?h('div',{class:'empty'},h('h3',null,'Aucun favori pour l’instant'),h('p',{class:'hint'},'Appuie sur le cœur d’une ligne du journal pour la retrouver ici en un geste.')):h('p',{class:'hint'},WD.nomatch));return;}
   rows.forEach(function(e){list.append(entryEl(e));});
 }
+function rowDot(e){
+  var d=h('span',{class:'dot'});
+  paintDot(d,e.col?HEX[e.col]:(e.type?TYPEHEX[e.type]:''),e.photo&&me&&me.photos?photoUrl(e.id,e.photo):null);
+  return d;
+}
 function entryEl(e){
   var open=!!openIds[e.id];
   var det=h('div',{class:'detail',hidden:!open});
   var head=h('button',{class:'rh',type:'button','aria-expanded':open?'true':'false',onclick:function(){
       open=!open;openIds[e.id]=open;head.setAttribute('aria-expanded',open?'true':'false');det.hidden=!open;if(open&&!det.firstChild)fillDetail(det,e);}},
-    h('span',{class:'dot',style:e.col?'background:'+HEX[e.col]:(e.type?'background:'+TYPEHEX[e.type]:null)}),
+    rowDot(e),
     h('div',{style:'min-width:0'},h('div',{class:'e-name'},e.nom||'À l\'aveugle'),
       h('div',{class:'e-meta'},[fmtDate(e.date),e.prod,e.app,e.cep,e.mil].filter(Boolean).join(' · '))),
     h('div',{class:'e-side'},(e.aveugle&&e.nom)?h('span',{class:'pill bl',title:'Dégusté à l\'aveugle'},'À l\'aveugle'):null,e.type?h('span',{class:'pill'},e.type):null,e.qual?h('span',{class:'pill q'},e.qual):null));
@@ -690,12 +784,21 @@ function entryEl(e){
 }
 function fillDetail(det,e){
   det.textContent='';
-  DETAIL.forEach(function(g){
+  var top=null;
+  if(e.photo&&me&&me.photos){
+    var src=photoUrl(e.id,e.photo),img=h('img',{class:'d-photo',src:src,alt:'Étiquette de '+(e.nom||'la dégustation à l\'aveugle'),loading:'lazy'});
+    var zb=h('button',{class:'d-zoom',type:'button',title:'Agrandir la photo',onclick:function(){zoomPhoto(src);}},img);
+    img.addEventListener('error',function(){zb.remove();});
+    top=h('div',{class:'d-top'},zb);det.append(top);
+  }
+  DETAIL.forEach(function(g,gi){
     var items=g[1].filter(function(k){return e[k];}).map(function(k){
       var v=k==='prix'?e[k]+' €':(k==='abv'?e[k]+' % vol.':e[k]);
       return h('div',{class:'it'},h('b',null,F[k].l),h('span',null,v));
     });
-    if(items.length)det.append(h('div',null,h('p',{class:'dgrp-t'},g[0]),h('div',{class:'kv'},items)));
+    if(!items.length)return;
+    var grp=h('div',null,h('p',{class:'dgrp-t'},g[0]),h('div',{class:'kv'},items));
+    if(top&&gi===0)top.append(grp);else det.append(grp);
   });
   var del=h('button',{class:'btn sm',type:'button'},'Supprimer'),armed=false,t;
   del.addEventListener('click',async function(){
@@ -707,7 +810,8 @@ function fillDetail(det,e){
 }
 function startEdit(e){
   var n=blank(false);FIELDKEYS.forEach(function(k){if(e[k])n[k]=e[k];});
-  entry=n;editId=e.id;editMeta={createdAt:e.createdAt};blindOn=!!e.aveugle;syncAll();queueDraft();show('fiche');window.scrollTo(0,0);
+  if(e.photo)n.photo=e.photo;
+  clearPend();entry=n;editId=e.id;editMeta={createdAt:e.createdAt};blindOn=!!e.aveugle;syncAll();queueDraft();show('fiche');window.scrollTo(0,0);
 }
 function slug(t){return norm(t).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||WD.slug;}
 function sheetModel(e){
@@ -715,7 +819,7 @@ function sheetModel(e){
   SECTIONS.forEach(function(sec){
     var rows=[];
     sec.keys.forEach(function(k){
-      var v=e[k];if(!v||k==='nom')return;
+      var v=e[k];if(!v||k==='nom'||!F[k])return;
       if(k==='date')v=fmtDate(v);else if(k==='prix')v=v+' €';else if(k==='abv')v=v+' % vol.';
       rows.push([F[k].l,String(v)]);
     });
@@ -730,17 +834,21 @@ function sheetText(e){
   return out.join('\r\n')+'\r\n';
 }
 function rgb(hex){var n=parseInt(String(hex).replace('#',''),16);return [(n>>16)&255,(n>>8)&255,n&255];}
-function buildPdf(e){
+function buildPdf(e,ph){
   var J=window.jspdf&&window.jspdf.jsPDF;if(!J)return null;
   var m=sheetModel(e),doc=new J({unit:'mm',format:'a4'}),W=210,H=297,M=18,cw=W-2*M,y=M,LH=4.7,LW=46;
   function ensure(n){if(y+n>H-16){doc.addPage();y=M;}}
-  var hex=e.col?HEX[e.col]:(e.type?TYPEHEX[e.type]:null),tx=M;
+  var hex=e.col?HEX[e.col]:(e.type?TYPEHEX[e.type]:null),tx=M,R=W-M,phBottom=0;
+  if(ph){
+    var iw=36,ih=Math.min(50,iw*ph.h/ph.w);iw=ih*ph.w/ph.h;
+    doc.addImage(ph.data,'JPEG',W-M-iw,y,iw,ih);R=W-M-iw-6;phBottom=y+ih;
+  }
   if(hex){var c=rgb(hex);doc.setFillColor(c[0],c[1],c[2]);doc.setDrawColor(120,110,125);doc.circle(M+4.5,y+3.2,4.2,'FD');tx=M+13;}
   doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(29,20,34);
-  var tl=doc.splitTextToSize(m.title,W-M-tx);doc.text(tl,tx,y+5);y+=Math.max(9,tl.length*8.2);
+  var tl=doc.splitTextToSize(m.title,R-tx);doc.text(tl,tx,y+5);y+=Math.max(9,tl.length*8.2);
   if(m.meta){doc.setFont('helvetica','normal');doc.setFontSize(10.5);doc.setTextColor(106,96,115);
-    var ml=doc.splitTextToSize(m.meta,W-M-tx);doc.text(ml,tx,y);y+=ml.length*LH;}
-  y+=3;doc.setDrawColor(123,30,62);doc.setLineWidth(0.6);doc.line(M,y,W-M,y);y+=7;
+    var ml=doc.splitTextToSize(m.meta,R-tx);doc.text(ml,tx,y);y+=ml.length*LH;}
+  y=Math.max(y,phBottom)+3;doc.setDrawColor(123,30,62);doc.setLineWidth(0.6);doc.line(M,y,W-M,y);y+=7;
   m.groups.forEach(function(g){
     ensure(14);
     doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(123,30,62);doc.text(g.t.toUpperCase(),M,y);
@@ -762,9 +870,18 @@ function buildPdf(e){
     doc.text('Carnet de dégustation',M,H-9);doc.text('Page '+i+' / '+n,W-M,H-9,{align:'right'});}
   return doc.output('arraybuffer');
 }
+async function pdfPhoto(e){
+  if(!e.photo||!me||!me.photos)return null;
+  try{
+    var res=await fetch(photoUrl(e.id,e.photo),{credentials:'same-origin'});if(!res.ok)return null;
+    var blob=await res.blob(),data=await new Promise(function(ok,ko){var r=new FileReader();r.onload=function(){ok(r.result);};r.onerror=ko;r.readAsDataURL(blob);});
+    var size=await new Promise(function(ok,ko){var i=new Image();i.onload=function(){ok({w:i.naturalWidth,h:i.naturalHeight});};i.onerror=ko;i.src=data;});
+    return {data:data,w:size.w,h:size.h};
+  }catch(err){console.warn('photo pdf',err);return null;}
+}
 async function downloadSheet(e){
   var base='fiche-'+slug(e.nom)+(e.date?'-'+e.date:''),text=sheetText(e),pdf=null;
-  try{await loadLib('/vendor/jspdf.umd.min.js');pdf=buildPdf(e);}catch(err){console.warn('pdf',err);}
+  try{await loadLib('/vendor/jspdf.umd.min.js');pdf=buildPdf(e,await pdfPhoto(e));}catch(err){console.warn('pdf',err);}
   if(pdf)return saveFile(base+'.pdf',pdf);
   return saveFile(base+'.txt',text);
 }
@@ -1045,7 +1162,7 @@ function setMode(m){
   if(m===mode)return;
   clearTimeout(draftTimer);draftTimer=null;if(!isEmpty()||editId)writeDraft();
   applyConfig(m);lsSet('carnet-mode',m);
-  entry=blank(false);editId=null;editMeta=null;blindOn=false;
+  entry=blank(false);editId=null;editMeta=null;blindOn=false;clearPend();
   jfilter.type='';jfilter.fav=false;cfilter.col='';afilter.g='';disarm();
   restoreDraft();rebuildAll();
   toast(m==='spi'?'Mode spiritueux':'Mode vin');
