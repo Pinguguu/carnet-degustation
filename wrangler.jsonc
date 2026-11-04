@@ -22,6 +22,8 @@
   // Photos d'étiquette (Cloudflare R2, voir README.md). Le bucket « carnet-photos » doit exister,
   // sinon Cloudflare refuse le déploiement.
   "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "carnet-photos" }],
+  // Détourage des bouteilles (Cloudflare Images, option « segment »). Sans lui, les photos restent telles quelles.
+  "images": { "binding": "IMAGES" },
   // Envoi des e-mails de récupération de mot de passe (Cloudflare Email Service, voir README.md, étape 4).
   // À décommenter une fois le domaine ajouté dans Email Service : sans cela, Cloudflare refuse le déploiement.
   // "send_email": [{ "name": "EMAIL" }],

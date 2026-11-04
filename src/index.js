@@ -18,7 +18,7 @@ const PHOTO_RE = /^[A-Za-z0-9_-]{1,20}$/; // version de la photo, enregistrée d
 // Champs d'une fiche de dégustation (identiques à ceux du site).
 const FIELD_KEYS = ['kind', 'aveugle', 'tex', 'fnat', 'exp', 'date', 'deg', 'nom', 'prod', 'app', 'cep', 'mil', 'prix', 'abv', 'type', 'eff', 'limp', 'icol', 'col',
   'aobs', 'cond', 'inez', 'anez', 'dev', 'suc', 'aci', 'tan', 'ttan', 'alc', 'corps', 'mousse', 'iboc', 'aboc', 'fin',
-  'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com', 'acc', 'fav', 'photo'];
+  'bobs', 'bal', 'lon', 'int', 'cpx', 'qual', 'jqual', 'mat', 'com', 'acc', 'fav', 'photo', 'photocut', 'photoorig'];
 const LONG_KEYS = new Set(['tex', 'aobs', 'anez', 'aboc', 'bobs', 'jqual', 'com', 'acc']);
 
 /* Le mode « spiritueux » est ouvert à tous les comptes. Pour le réserver à certains comptes, définir SPIRITS_USERS
@@ -28,7 +28,7 @@ function spiritsAllowed(env, username) {
   if (!raw || raw === '*') return true;
   return raw.split(',').map((x) => x.trim()).filter(Boolean).includes(String(username || '').toLowerCase());
 }
-const publicUser = (env, username, email) => ({ username, email: email || null, spirits: spiritsAllowed(env, username), photos: !!env.PHOTOS });
+const publicUser = (env, username, email) => ({ username, email: email || null, spirits: spiritsAllowed(env, username), photos: !!env.PHOTOS, cutout: !!(env.PHOTOS && env.IMAGES) });
 
 class HttpError extends Error {
   constructor(status, message, extra) { super(message); this.status = status; this.extra = extra; }
@@ -412,6 +412,8 @@ function cleanEntry(body, env, user) {
   if (!Object.keys(out).length) throw new HttpError(400, 'La fiche est vide.');
   if (out.date && !/^\d{4}-\d{2}-\d{2}$/.test(out.date)) delete out.date;
   if (out.photo && !PHOTO_RE.test(out.photo)) delete out.photo;
+  if (out.photocut && !PHOTO_RE.test(out.photocut)) delete out.photocut;
+  if (out.photoorig !== 'Oui') delete out.photoorig;
   return out;
 }
 
@@ -459,13 +461,15 @@ async function deleteEntry(env, request, rawId) {
   const id = decodeURIComponent(rawId);
   if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
   await env.DB.prepare('DELETE FROM entries WHERE user_id = ? AND id = ?').bind(user.id, id).run();
-  if (env.PHOTOS) await env.PHOTOS.delete(photoKey(user.id, id));
+  if (env.PHOTOS) await env.PHOTOS.delete([photoKey(user.id, id), cutKey(user.id, id)]);
   return json({ ok: true });
 }
 
 /* ---------- photos d'étiquette (Cloudflare R2) ---------- */
 // Une photo par fiche, rangée sous « identifiant du compte / identifiant de la fiche » : un compte ne voit que ses photos.
 const photoKey = (userId, entryId) => userId + '/' + entryId + '.jpg';
+// Bouteille détourée (fond transparent), à côté de la photo d'origine.
+const cutKey = (userId, entryId) => userId + '/' + entryId + '.cut.webp';
 
 function requirePhotos(env) {
   if (!env.PHOTOS) throw new HttpError(503, 'Les photos ne sont pas encore activées sur ce site.');
@@ -475,10 +479,11 @@ async function entryRow(env, userId, id) {
   return env.DB.prepare('SELECT id, data, created_at, updated_at FROM entries WHERE user_id = ? AND id = ?').bind(userId, id).first();
 }
 
-async function setEntryPhoto(env, userId, row, version) {
+// changes : { photo, photocut, photoorig } ; une valeur vide retire le champ.
+async function setEntryPhoto(env, userId, row, changes) {
   let data = {};
   try { data = JSON.parse(row.data); } catch (e) { /* fiche illisible : on repart de zéro */ }
-  if (version) data.photo = version; else delete data.photo;
+  for (const [k, v] of Object.entries(changes)) { if (v) data[k] = v; else delete data[k]; }
   const now = new Date().toISOString();
   await env.DB.prepare('UPDATE entries SET data = ?, updated_at = ? WHERE user_id = ? AND id = ?')
     .bind(JSON.stringify(data), now, userId, row.id).run();
@@ -498,7 +503,48 @@ async function putPhoto(env, request, rawId) {
   const b = new Uint8Array(buf, 0, Math.min(3, buf.byteLength));
   if (b.length < 3 || b[0] !== 0xff || b[1] !== 0xd8 || b[2] !== 0xff) throw new HttpError(415, 'La photo doit être au format JPEG.');
   await env.PHOTOS.put(photoKey(user.id, id), buf, { httpMetadata: { contentType: 'image/jpeg' } });
-  const entry = await setEntryPhoto(env, user.id, row, Date.now().toString(36));
+  const version = Date.now().toString(36);
+  const cut = await cutout(env, buf);
+  if (cut) await env.PHOTOS.put(cutKey(user.id, id), cut, { httpMetadata: { contentType: 'image/webp' } });
+  else await env.PHOTOS.delete(cutKey(user.id, id));
+  const entry = await setEntryPhoto(env, user.id, row, { photo: version, photocut: cut ? version : null, photoorig: null });
+  return json({ entry });
+}
+
+/* Détourage par Cloudflare Images (modèle BiRefNet) : ne garde que le sujet, sur fond transparent, puis rogne les bords vides.
+   En cas d'échec (service non activé, quota atteint, photo sans sujet net), on garde simplement la photo d'origine. */
+async function cutout(env, buf) {
+  if (!env.IMAGES) return null;
+  for (const steps of [[{ segment: 'foreground' }, { trim: 'border' }], [{ segment: 'foreground' }]]) {
+    try {
+      let img = env.IMAGES.input(new Blob([buf]).stream());
+      for (const step of steps) img = img.transform(step);
+      const out = await (await img.output({ format: 'image/webp', quality: 85 })).response().arrayBuffer();
+      if (out.byteLength) return out;
+    } catch (e) {
+      console.error('Détourage impossible :', JSON.stringify(steps), e && e.message);
+    }
+  }
+  return null;
+}
+
+// Détourer après coup une photo déjà enregistrée.
+async function cutPhoto(env, request, rawId) {
+  requirePhotos(env);
+  const user = await requireUser(env, request);
+  const id = decodeURIComponent(rawId);
+  if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
+  if (await tooMany(env, 'cut:' + user.id, 30, 3600)) throw new HttpError(429, 'Trop de détourages d’un coup. Réessaie plus tard.');
+  await noteAttempt(env, 'cut:' + user.id);
+  const row = await entryRow(env, user.id, id);
+  const obj = row && await env.PHOTOS.get(photoKey(user.id, id));
+  if (!obj) throw new HttpError(404, 'Photo introuvable.');
+  const cut = await cutout(env, await obj.arrayBuffer());
+  if (!cut) throw new HttpError(422, 'Le détourage n’a pas marché sur cette photo. Essaie avec une photo plus nette, la bouteille bien visible.');
+  await env.PHOTOS.put(cutKey(user.id, id), cut, { httpMetadata: { contentType: 'image/webp' } });
+  let data = {};
+  try { data = JSON.parse(row.data); } catch (e) { /* fiche illisible */ }
+  const entry = await setEntryPhoto(env, user.id, row, { photocut: data.photo || Date.now().toString(36), photoorig: null });
   return json({ entry });
 }
 
@@ -507,11 +553,12 @@ async function getPhoto(env, request, rawId) {
   const user = await requireUser(env, request);
   const id = decodeURIComponent(rawId);
   if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
-  const obj = await env.PHOTOS.get(photoKey(user.id, id));
+  const cut = new URL(request.url).searchParams.get('k') === 'cut';
+  const obj = await env.PHOTOS.get(cut ? cutKey(user.id, id) : photoKey(user.id, id));
   if (!obj) throw new HttpError(404, 'Photo introuvable.');
   return new Response(obj.body, {
     headers: {
-      'Content-Type': 'image/jpeg',
+      'Content-Type': cut ? 'image/webp' : 'image/jpeg',
       // l'adresse change à chaque nouvelle photo (?v=…), le navigateur peut donc la garder longtemps
       'Cache-Control': 'private, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
@@ -524,9 +571,9 @@ async function deletePhoto(env, request, rawId) {
   const user = await requireUser(env, request);
   const id = decodeURIComponent(rawId);
   if (!ID_RE.test(id)) throw new HttpError(400, 'Identifiant de fiche invalide.');
-  await env.PHOTOS.delete(photoKey(user.id, id));
+  await env.PHOTOS.delete([photoKey(user.id, id), cutKey(user.id, id)]);
   const row = await entryRow(env, user.id, id);
-  return json({ entry: row ? await setEntryPhoto(env, user.id, row, null) : null });
+  return json({ entry: row ? await setEntryPhoto(env, user.id, row, { photo: null, photocut: null, photoorig: null }) : null });
 }
 
 async function deleteUserPhotos(env, userId) {
@@ -600,6 +647,8 @@ async function route(request, env, ctx) {
     if (method === 'PUT') return putEntry(env, request, m[1]);
     if (method === 'DELETE') return deleteEntry(env, request, m[1]);
   }
+  const mc = /^\/api\/photo\/([^/]+)\/cut$/.exec(path);
+  if (mc && method === 'POST') return cutPhoto(env, request, mc[1]);
   const mp = /^\/api\/photo\/([^/]+)$/.exec(path);
   if (mp) {
     if (method === 'GET') return getPhoto(env, request, mp[1]);

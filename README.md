@@ -64,6 +64,8 @@ Chaque fiche (vin ou spiritueux) peut avoir une photo de l'étiquette : vignette
 
 Tant que la ligne est en commentaire, le champ photo n'apparaît pas.
 
+**Détourage des bouteilles.** À l'envoi d'une photo, le site demande à **Cloudflare Images** (option `segment`, modèle BiRefNet) de ne garder que la bouteille, sur fond transparent : c'est elle qui s'affiche dans le journal, avec un bouton pour revenir à la photo d'origine (gardée aussi). Les anciennes photos ont un bouton « Détourer la bouteille ». Réglage : la ligne `"images": { "binding": "IMAGES" }` de `wrangler.jsonc`. L'offre gratuite de Cloudflare Images couvre 5 000 détourages par mois ; au-delà, ou si le détourage échoue, la photo d'origine est simplement gardée. En local (`wrangler dev`), le simulateur ne sait pas détourer : la photo revient telle quelle.
+
 ### 6. Spiritueux
 
 Le site contient aussi la fiche spiritueux, ouverte à tous les comptes : un sélecteur **Vins / Spiritueux** apparaît sous le titre.
@@ -126,7 +128,7 @@ npx wrangler d1 execute carnet-degustation --local --command "SELECT username FR
 - Sessions : jeton aléatoire de 30 jours, seul son hachage est stocké ; cookie `HttpOnly`, `SameSite=Lax`, `Secure` en HTTPS. Le changement de mot de passe ferme les autres sessions.
 - Limitation des essais : 8 échecs par identifiant et par 15 minutes (30 par adresse IP), 20 créations de compte par heure et par adresse IP.
 - Récupération du mot de passe : jeton aléatoire valable une heure et à usage unique, seul son hachage est stocké. Le lien porte le jeton après `#`, donc il n'apparaît pas dans les journaux du serveur. La réponse est la même que le compte existe ou non. Au plus 3 e-mails par compte et 10 demandes par adresse IP, par heure. Une réinitialisation ferme toutes les sessions ; changer d'adresse ou de mot de passe annule les liens en cours.
-- Photos : rangées sous l'identifiant du compte, servies uniquement au compte connecté qui les a ajoutées ; JPEG uniquement, 1,5 Mo au plus. Supprimer une fiche ou un compte supprime ses photos.
+- Photos (et bouteilles détourées) : rangées sous l'identifiant du compte, servies uniquement au compte connecté qui les a ajoutées ; JPEG uniquement, 1,5 Mo au plus. Supprimer une fiche ou un compte supprime ses photos.
 - Changer d'adresse e-mail demande le mot de passe. L'adresse n'est pas vérifiée à l'inscription : une adresse erronée empêche seulement la récupération.
 - Vérification de l'en-tête `Origin` sur les requêtes qui modifient des données.
 - Politique de sécurité du contenu (CSP) et autres en-têtes dans `public/_headers`.

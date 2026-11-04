@@ -314,6 +314,10 @@ input,select,textarea{border-radius:14px!important}
 .d-top>div{flex:1 1 260px;min-width:0}
 .d-zoom{padding:0;border:0;background:none;border-radius:16px;cursor:zoom-in;flex:none;max-width:100%}
 .d-photo{display:block;width:180px;max-width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:16px;border:1px solid var(--line)}
+.d-top>.d-phcol{display:grid;gap:8px;justify-items:start;flex:none;max-width:100%}
+/* bouteille détourée : entière, sur un fond clair dans les deux thèmes (les bouteilles sont souvent sombres) */
+.dot.ph.cut,.p-dot.ph.cut{background-size:contain;background-color:#EFECF2}
+.d-photo.cut{object-fit:contain;background:#EFECF2;padding:10px}
 .lbox{position:fixed;inset:0;z-index:60;background:rgba(10,5,12,.86);display:grid;place-items:center;padding:24px;cursor:zoom-out}
 .lbox img{max-width:100%;max-height:100%;border-radius:12px}
 
