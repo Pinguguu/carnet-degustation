@@ -286,10 +286,13 @@ var CAM='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="cur
 /* un seul champ fichier, sans « capture » : le téléphone affiche son propre menu (photothèque, appareil photo, fichiers) ;
    seul le libellé du bouton change entre écran tactile et ordinateur */
 var TOUCH=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
-function photoUrl(id,v){return '/api/photo/'+encodeURIComponent(id)+'?v='+encodeURIComponent(v);}
+function photoUrl(id,v,cut){return '/api/photo/'+encodeURIComponent(id)+'?v='+encodeURIComponent(v)+(cut?'&k=cut':'');}
+/* photo affichée pour une fiche : la bouteille détourée si elle existe, sauf si la personne a choisi la photo d'origine */
+function showsCut(e){return !!(e.photocut&&!e.photoorig);}
+function entryPhotoUrl(e){return e.photo&&me&&me.photos?photoUrl(e.id,e.photo,showsCut(e)?e.photocut:null):null;}
 function formPhotoUrl(){
   if(pend.url)return pend.url;
-  if(!pend.remove&&editId&&entry.photo)return photoUrl(editId,entry.photo);
+  if(!pend.remove&&editId&&entry.photo)return photoUrl(editId,entry.photo,showsCut(entry)?entry.photocut:null);
   return null;
 }
 function clearPend(){if(pend.url)URL.revokeObjectURL(pend.url);pend={blob:null,url:null,remove:false};}
@@ -336,10 +339,11 @@ function paintPhoto(){
   p.pick.textContent=url?'Changer la photo':(TOUCH?'Prendre une photo':'Choisir une photo');
 }
 /* couleur et photo posées séparément : la propriété raccourcie « background » effacerait le recadrage centré de .ph */
-function paintDot(dot,color,url){
-  dot.style.backgroundColor=color||'';
+function paintDot(dot,color,url,cut){
+  dot.style.backgroundColor=cut?'':(color||'');
   dot.style.backgroundImage=url?'url("'+url+'")':'';
   dot.classList.toggle('ph',!!url);
+  dot.classList.toggle('cut',!!(url&&cut));
 }
 function zoomPhoto(src){
   var back=document.activeElement,img=h('img',{src:src,alt:'Photo de l’étiquette'});
@@ -440,7 +444,7 @@ function renderSummary(){
   s.name.textContent=entry.nom||WD.nouveau;
   var meta=[entry.prod,entry.app,entry.mil].filter(Boolean).join(' · ');
   s.meta.textContent=meta||'Le profil se dessine au fil de la dégustation.';
-  paintDot(s.dot,entry.col?HEX[entry.col]:(entry.type?TYPEHEX[entry.type]:''),formPhotoUrl());
+  paintDot(s.dot,entry.col?HEX[entry.col]:(entry.type?TYPEHEX[entry.type]:''),formPhotoUrl(),!pend.url&&showsCut(entry));
   PROFILE.forEach(function(r){
     var k=r[0],row=s.rows[k],i=SCALE[F[k].s].indexOf(entry[k]);
     gaugeFill(row.cells,i);row.v.textContent=i>=0?entry[k]:'—';
@@ -697,18 +701,19 @@ async function saveEntry(){
   FIELDKEYS.forEach(function(k){if(entry[k])o[k]=entry[k];});
   if(mode==='spi')o.kind='spi';
   if(keepFav)o.fav='Oui';
-  if(editId&&entry.photo&&!pend.remove)o.photo=entry.photo;
+  if(editId&&entry.photo&&!pend.remove&&!pend.blob)['photo','photocut','photoorig'].forEach(function(k){if(entry[k])o[k]=entry[k];});
   o.id=editId||newId();o.createdAt=(editMeta&&editMeta.createdAt)||now;o.updatedAt=now;
   var btn=$('#bsave'),btn2=$('#bblind');btn.disabled=true;btn2.disabled=true;
   try{
     await store.save(o);
-    var wasEdit=!!editId,name=entry.nom||'Dégustation à l\'aveugle',phErr=null;
+    var wasEdit=!!editId,name=entry.nom||'Dégustation à l\'aveugle',phErr=null,phCut=false;
     if(pend.blob||pend.remove){
-      try{var pe=await sendPhoto(o.id);if(pe){upsertLocal([pe]);renderJournal();}}
+      try{var pe=await sendPhoto(o.id);if(pe){upsertLocal([pe]);renderJournal();if(pend.blob&&me.cutout&&!pe.photocut)phCut=true;}}
       catch(err){phErr=(err&&err.message)||'réessaie';}
     }
     resetForm();
-    if(phErr)toast('« '+name+' » enregistré, mais la photo n’a pas pu être envoyée ('+phErr+'). Ouvre la fiche dans le journal pour la remettre.');
+    if(phCut&&!phErr)toast('« '+name+' » enregistré. La bouteille n’a pas pu être détourée : la photo est gardée telle quelle.');
+    else if(phErr)toast('« '+name+' » enregistré, mais la photo n’a pas pu être envoyée ('+phErr+'). Ouvre la fiche dans le journal pour la remettre.');
     else toast(wasEdit?'« '+name+' » mis à jour':'« '+name+' » ajouté au journal','Voir le journal',function(){show('journal');});
   }catch(e){
     console.warn(e);toast('Enregistrement impossible : '+((e&&e.message)||'réessaie dans un instant.'));
@@ -762,7 +767,7 @@ function renderJournal(){
 }
 function rowDot(e){
   var d=h('span',{class:'dot'});
-  paintDot(d,e.col?HEX[e.col]:(e.type?TYPEHEX[e.type]:''),e.photo&&me&&me.photos?photoUrl(e.id,e.photo):null);
+  paintDot(d,e.col?HEX[e.col]:(e.type?TYPEHEX[e.type]:''),entryPhotoUrl(e),showsCut(e));
   return d;
 }
 function entryEl(e){
@@ -788,10 +793,11 @@ function fillDetail(det,e){
   det.textContent='';
   var top=null;
   if(e.photo&&me&&me.photos){
-    var src=photoUrl(e.id,e.photo),img=h('img',{class:'d-photo',src:src,alt:'Étiquette de '+(e.nom||'la dégustation à l\'aveugle'),loading:'lazy'});
+    var src=entryPhotoUrl(e),img=h('img',{class:'d-photo'+(showsCut(e)?' cut':''),src:src,alt:'Photo de '+(e.nom||'la dégustation à l\'aveugle'),loading:'lazy'});
     var zb=h('button',{class:'d-zoom',type:'button',title:'Agrandir la photo',onclick:function(){zoomPhoto(src);}},img);
-    img.addEventListener('error',function(){zb.remove();});
-    top=h('div',{class:'d-top'},zb);det.append(top);
+    img.addEventListener('error',function(){col.remove();});
+    var col=h('div',{class:'d-phcol'},zb,photoSwitch(e));
+    top=h('div',{class:'d-top'},col);det.append(top);
   }
   DETAIL.forEach(function(g,gi){
     var items=g[1].filter(function(k){return e[k];}).map(function(k){
@@ -810,9 +816,25 @@ function fillDetail(det,e){
   });
   det.append(h('div',{class:'acts'},h('button',{class:'btn sm pri',type:'button',onclick:function(){downloadSheet(e);}},'Télécharger la fiche'),h('button',{class:'btn sm',type:'button',onclick:function(){startEdit(e);}},'Modifier dans la fiche'),del));
 }
+/* sous la photo du détail : passer de la bouteille détourée à la photo d'origine, ou détourer une ancienne photo */
+function photoSwitch(e){
+  if(e.photocut){
+    return h('button',{class:'btn sm',type:'button',onclick:async function(ev){
+      var b=ev.currentTarget,o=Object.assign({},e);b.disabled=true;
+      if(e.photoorig)delete o.photoorig;else o.photoorig='Oui';
+      try{await store.save(o);}catch(err){b.disabled=false;toast('Changement impossible : '+((err&&err.message)||'réessaie.'));}
+    }},e.photoorig?'Voir la bouteille détourée':'Voir la photo d’origine');
+  }
+  if(!me||!me.cutout)return null;
+  return h('button',{class:'btn sm',type:'button',onclick:async function(ev){
+    var b=ev.currentTarget;b.disabled=true;b.textContent='Détourage…';
+    try{var r=await api('POST','/api/photo/'+encodeURIComponent(e.id)+'/cut');upsertLocal([r.entry]);renderJournal();}
+    catch(err){b.disabled=false;b.textContent='Détourer la bouteille';toast((err&&err.message)||'Détourage impossible. Réessaie.');}
+  }},'Détourer la bouteille');
+}
 function startEdit(e){
   var n=blank(false);FIELDKEYS.forEach(function(k){if(e[k])n[k]=e[k];});
-  if(e.photo)n.photo=e.photo;
+  ['photo','photocut','photoorig'].forEach(function(k){if(e[k])n[k]=e[k];});
   clearPend();entry=n;editId=e.id;editMeta={createdAt:e.createdAt};blindOn=!!e.aveugle;syncAll();queueDraft();show('fiche');window.scrollTo(0,0);
 }
 function slug(t){return norm(t).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||WD.slug;}
