@@ -345,8 +345,8 @@ function paintDot(dot,color,url,cut){
   dot.classList.toggle('ph',!!url);
   dot.classList.toggle('cut',!!(url&&cut));
 }
-function zoomPhoto(src){
-  var back=document.activeElement,img=h('img',{src:src,alt:'Photo de l’étiquette'});
+function zoomPhoto(src,cut){
+  var back=document.activeElement,img=h('img',{src:src,alt:'Photo de l’étiquette',class:cut?'cut':null});
   var box=h('div',{class:'lbox',role:'dialog','aria-modal':'true','aria-label':'Photo de l’étiquette',tabindex:'-1'},img);
   function close(){document.removeEventListener('keydown',key);box.remove();if(back&&back.focus)back.focus();}
   function key(ev){if(ev.key==='Escape')close();}
@@ -794,7 +794,7 @@ function fillDetail(det,e){
   var top=null;
   if(e.photo&&me&&me.photos){
     var src=entryPhotoUrl(e),img=h('img',{class:'d-photo'+(showsCut(e)?' cut':''),src:src,alt:'Photo de '+(e.nom||'la dégustation à l\'aveugle'),loading:'lazy'});
-    var zb=h('button',{class:'d-zoom',type:'button',title:'Agrandir la photo',onclick:function(){zoomPhoto(src);}},img);
+    var zb=h('button',{class:'d-zoom',type:'button',title:'Agrandir la photo',onclick:function(){zoomPhoto(src,showsCut(e));}},img);
     img.addEventListener('error',function(){col.remove();});
     var col=h('div',{class:'d-phcol'},zb,photoSwitch(e));
     top=h('div',{class:'d-top'},col);det.append(top);
