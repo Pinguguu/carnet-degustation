@@ -335,10 +335,11 @@ function paintPhoto(){
   if(url&&p.prev.getAttribute('src')!==url)p.prev.src=url;
   p.pick.textContent=url?'Changer la photo':(TOUCH?'Prendre une photo':'Choisir une photo');
 }
+/* couleur et photo posées séparément : la propriété raccourcie « background » effacerait le recadrage centré de .ph */
 function paintDot(dot,color,url){
-  dot.style.background=color||'';
+  dot.style.backgroundColor=color||'';
+  dot.style.backgroundImage=url?'url("'+url+'")':'';
   dot.classList.toggle('ph',!!url);
-  if(url)dot.style.backgroundImage='url("'+url+'")';
 }
 function zoomPhoto(src){
   var back=document.activeElement,img=h('img',{src:src,alt:'Photo de l’étiquette'});
